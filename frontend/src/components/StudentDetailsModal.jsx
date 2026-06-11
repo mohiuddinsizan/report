@@ -354,12 +354,12 @@ function StudentDetailsModal({ student, onClose }) {
         </section>
 
         <AnalysisPair
-          title="Science vs Non-Science Analysis"
-          description="Comparison between Science subjects and Non-Science subjects using total result percentage."
+          title="Science vs General Analysis"
+          description="Comparison between Science subjects and General subjects using total result percentage."
           leftTitle="Science"
           leftSubtitle="Physics, Chemistry, Math, Biology, BGS"
           leftData={partitions.science}
-          rightTitle="Non-Science"
+          rightTitle="General"
           rightSubtitle="Bangla, English, Religion, ICT"
           rightData={partitions.nonScience}
           comparison={partitions.comparison}

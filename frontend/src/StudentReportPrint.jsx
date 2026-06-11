@@ -134,7 +134,7 @@ const css = `
 .backHead .rt b{font-size:18px;display:block;}
 .backHead .rt span{font-size:10px;opacity:.85;}
 
-.donutRow{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+.donutRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
 .donutCard{border:1px solid var(--line);border-radius:12px;padding:6px 5px 7px;text-align:center;
   background:linear-gradient(180deg,#ffffff,#f6fbfa);display:flex;flex-direction:column;align-items:center;gap:3px;}
 .donutCard .dt{font-size:9.5px;font-weight:800;color:#0f172a;line-height:1.1;min-height:21px;display:flex;align-items:center;}
@@ -183,43 +183,43 @@ function bandColor(p) {
   return { bar: "#475569", bg: "#f1f5f9", text: "#334155", label: "বিশেষ মনোযোগ" };
 }
 
-/* ============ HARD-CODED WRITTEN-PERCENTAGE COMMENT (frontend) =========== */
+/* ============ WRITTEN-PERCENTAGE COMMENT (frontend, mentor voice) ========= */
 function getWrittenComment(percentage) {
   const p = Number(percentage) || 0;
   if (p >= 90)
     return {
-      category: "লিখিত অংশে চমৎকার পারফরম্যান্স",
+      category: "লিখিত অংশে দারুণ করছ",
       comment:
-        "লিখিত অংশে শিক্ষার্থী চমৎকার করছে। উত্তর গুছিয়ে লেখা, প্রয়োজনীয় পয়েন্ট ও ব্যাখ্যা সঠিকভাবে তুলে ধরা এবং উপস্থাপনার এই মান ধরে রাখলে লিখিত অংশ থেকে ধারাবাহিকভাবে ভালো নম্বর পাওয়া সম্ভব।",
+        "লিখিত অংশে তোমার হাত বেশ পাকা। উত্তর গুছিয়ে লেখা, দরকারি পয়েন্টগুলো ধরা আর পরিষ্কার উপস্থাপনা—এই মানটা ধরে রাখতে পারলে লিখিত থেকে নিয়মিত ভালো নম্বর আসতেই থাকবে।",
     };
   if (p >= 80)
     return {
-      category: "লিখিত অংশে ভালো করছে",
+      category: "লিখিত অংশে ভালো করছ",
       comment:
-        "লিখিত অংশে শিক্ষার্থী ভালো করছে। হাতের লেখা, উত্তরের কাঠামো ও সময় ব্যবস্থাপনায় আরও একটু যত্ন নিলে এবং গুরুত্বপূর্ণ পয়েন্টগুলো জোর দিলে এই অংশের নম্বর আরও বাড়ানো সম্ভব।",
+        "লিখিত অংশে তুমি ভালো করছ। হাতের লেখা, উত্তরের সাজানো ভাব আর সময় ধরে শেষ করার দিকে আর একটু খেয়াল দাও, গুরুত্বপূর্ণ পয়েন্টে জোর দাও—তাহলে এই অংশের নম্বর আরও বাড়বে।",
     };
   if (p >= 65)
     return {
       category: "লিখিত অংশ মোটামুটি ভালো",
       comment:
-        "লিখিত অংশে প্রস্তুতি মোটামুটি ভালো আছে। গুরুত্বপূর্ণ প্রশ্নগুলো নিয়মিত লিখে অনুশীলন করা এবং উত্তর সাজিয়ে, পরিষ্কারভাবে উপস্থাপন করার চর্চা করলে দ্রুত উন্নতি হবে।",
+        "লিখিত অংশে প্রস্তুতি মোটামুটি ঠিকঠাক আছে। গুরুত্বপূর্ণ প্রশ্নগুলো নিজে হাতে লিখে অনুশীলন করো আর উত্তর গুছিয়ে উপস্থাপন করার চর্চা রাখো—দ্রুত উন্নতি চোখে পড়বে।",
     };
   if (p >= 50)
     return {
-      category: "লিখিত অংশে আরও মনোযোগ দরকার",
+      category: "লিখিত অংশে আরও মন দিতে হবে",
       comment:
-        "লিখিত অংশে আরও মনোযোগ দেওয়া দরকার। শুধু পড়লেই হবে না—নিয়মিত লিখে অনুশীলন করা, উত্তরের কাঠামো ঠিক রাখা এবং সময় ধরে লেখার চর্চা করলে এই অংশ থেকে ভালো নম্বর আসবে।",
+        "লিখিত অংশে আরও মনোযোগ দরকার। শুধু পড়লে হবে না—নিয়মিত হাতে লিখে অনুশীলন করো, উত্তরের কাঠামো ঠিক রাখো আর সময় ধরে লেখার অভ্যাস করো। তাহলেই এই অংশ থেকে ভালো নম্বর আসবে।",
     };
   if (p >= 30)
     return {
-      category: "লিখিত অংশ দুর্বল, চর্চা বাড়ানো দরকার",
+      category: "লিখিত অংশটা একটু দুর্বল",
       comment:
-        "লিখিত অংশে ফলাফল তুলনামূলকভাবে কম। প্রতিদিন নির্দিষ্ট সময় লেখার অনুশীলন, গুরুত্বপূর্ণ প্রশ্নের উত্তর তৈরি করা এবং মেন্টরের কাছে খাতা দেখিয়ে ভুলগুলো ঠিক করে নেওয়া দরকার।",
+        "লিখিত অংশে নম্বর তুলনায় কম এসেছে। প্রতিদিন একটা নির্দিষ্ট সময় লেখার অনুশীলন করো, গুরুত্বপূর্ণ প্রশ্নের উত্তর আগে থেকে তৈরি রাখো আর খাতা মেন্টরকে দেখিয়ে ভুলগুলো শুধরে নাও।",
     };
   return {
-    category: "লিখিত অংশে বিশেষ মনোযোগ প্রয়োজন",
+    category: "লিখিত অংশে এখনই মন দেওয়া দরকার",
     comment:
-      "লিখিত অংশে ফলাফল অনেক কম এসেছে। এখন থেকেই নিয়মিত লেখার অভ্যাস গড়ে তোলা, বেসিক প্রশ্ন থেকে শুরু করা এবং মেন্টরের সরাসরি সহায়তা নিয়ে ধাপে ধাপে এগোনো খুব জরুরি।",
+      "লিখিত অংশে নম্বর অনেকটাই কম। আজ থেকেই নিয়ম করে লেখার অভ্যাস গড়ো, একদম সহজ প্রশ্ন থেকে শুরু করো আর মেন্টরের সরাসরি সাহায্য নিয়ে ধাপে ধাপে এগোও—এটা খুব জরুরি।",
   };
 }
 
@@ -268,22 +268,72 @@ function Donut({ correct, incorrect, skipped, center, centerLabel, size = 86, th
   );
 }
 
+/* MCQ donut card — correct / incorrect / skipped only (MCQ score in center) */
 function DonutCard({ title, data }) {
   const correct = data?.correctPercentage || 0;
   const incorrect = data?.incorrectPercentage || 0;
   const skipped = data?.skippedPercentage || 0;
-  const total = data?.totalPercentage || 0;
-  const written = data?.writtenPercentage || 0;
-  const col = bandColor(total);
+  const col = bandColor(correct);
   return (
     <div className="donutCard">
       <div className="dt">{title}</div>
-      <Donut correct={correct} incorrect={incorrect} skipped={skipped} center={total} centerLabel="মোট" />
+      <Donut correct={correct} incorrect={incorrect} skipped={skipped} center={correct} centerLabel="MCQ" />
       <div className="dleg">
         <div className="l"><span className="nm"><span className="dotk" style={{ background: "#22c55e" }} />সঠিক</span><b>{correct}%</b></div>
         <div className="l"><span className="nm"><span className="dotk" style={{ background: "#ef4444" }} />ভুল</span><b>{incorrect}%</b></div>
         <div className="l"><span className="nm"><span className="dotk" style={{ background: "#f59e0b" }} />স্কিপ</span><b>{skipped}%</b></div>
-        <div className="l"><span className="nm"><span className="dotk" style={{ background: "#06b6d4" }} />লিখিত</span><b>{written}%</b></div>
+      </div>
+      <span className="dchip" style={{ background: col.bg, color: col.text }}>{col.label}</span>
+    </div>
+  );
+}
+
+/* Written donut — single arc: obtained marks vs total marks */
+function WrittenDonut({ pct, size = 86, thickness = 14 }) {
+  const v = Number(pct) || 0;
+  const r = (size - thickness) / 2;
+  const cx = size / 2;
+  const C = 2 * Math.PI * r;
+  const col = bandColor(v);
+  const len = Math.max((v / 100) * C, 0);
+  return (
+    <div className="donutWrap" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke="#eef2f7" strokeWidth={thickness} />
+        {len > 0 && (
+          <circle
+            cx={cx}
+            cy={cx}
+            r={r}
+            fill="none"
+            stroke={col.bar}
+            strokeWidth={thickness}
+            strokeLinecap="round"
+            strokeDasharray={`${len} ${C - len}`}
+            transform={`rotate(-90 ${cx} ${cx})`}
+          />
+        )}
+      </svg>
+      <div className="donutCenter">
+        <strong style={{ color: col.bar }}>{v}%</strong>
+        <span>লিখিত</span>
+      </div>
+    </div>
+  );
+}
+
+function WrittenCard({ title, data }) {
+  const written = data?.writtenPercentage || 0;
+  const obtained = data?.totalWritten || 0;
+  const total = data?.totalWrittenMarks || 0;
+  const col = bandColor(written);
+  return (
+    <div className="donutCard">
+      <div className="dt">{title}</div>
+      <WrittenDonut pct={written} />
+      <div className="dleg">
+        <div className="l"><span className="nm"><span className="dotk" style={{ background: "#06b6d4" }} />প্রাপ্ত</span><b>{obtained}</b></div>
+        <div className="l"><span className="nm"><span className="dotk" style={{ background: "#cbd5e1" }} />মোট</span><b>{total}</b></div>
       </div>
       <span className="dchip" style={{ background: col.bg, color: col.text }}>{col.label}</span>
     </div>
@@ -425,7 +475,6 @@ function FrontPage({ student }) {
 function BackPage({ student }) {
   const a = student.analysis || {};
   const p = a.partitions || {};
-  const mp = a.mathPartitions || {};
   const written = getWrittenComment(a.writtenPercentage || 0);
   return (
     <div className="srp-page" style={{ "--ribbon": "linear-gradient(180deg,#0d9488,#2563eb)" }}>
@@ -446,9 +495,18 @@ function BackPage({ student }) {
       <div className="donutRow">
         <DonutCard title="সামগ্রিক" data={a} />
         <DonutCard title="Science" data={p.science} />
-        <DonutCard title="Non-Science" data={p.nonScience} />
-        <DonutCard title="Mathematical" data={mp.mathematical} />
-        <DonutCard title="Non-Math" data={mp.nonMathematical} />
+        <DonutCard title="General" data={p.nonScience} />
+      </div>
+
+      <div className="secLabel" style={{ "--accent": "#0891b2" }}>
+        <span className="tag">WRITTEN</span>
+        <b>লিখিত অংশের ফলাফল (প্রাপ্ত / মোট)</b>
+        <span className="rule" />
+      </div>
+      <div className="donutRow">
+        <WrittenCard title="সামগ্রিক" data={a} />
+        <WrittenCard title="Science" data={p.science} />
+        <WrittenCard title="General" data={p.nonScience} />
       </div>
 
       <div className="secLabel" style={{ "--accent": "#6366f1" }}>
@@ -467,20 +525,11 @@ function BackPage({ student }) {
 
       <div className="cmt" style={{ "--accent": "#0d9488" }}>
         <div className="ch">
-          <span className="label">Science vs Non-Science</span>
+          <span className="label">Science vs General</span>
           <span className="dev">পার্থক্য: {p.comparison?.deviation || 0}%</span>
         </div>
         <h3 style={{ marginTop: 2 }}>{p.comparison?.category}</h3>
         <p>{p.comparison?.comment}</p>
-      </div>
-
-      <div className="cmt" style={{ "--accent": "#b45309" }}>
-        <div className="ch">
-          <span className="label">Math vs Non-Math</span>
-          <span className="dev">পার্থক্য: {mp.comparison?.deviation || 0}%</span>
-        </div>
-        <h3 style={{ marginTop: 2 }}>{mp.comparison?.category}</h3>
-        <p>{mp.comparison?.comment}</p>
       </div>
 
       <div className="cmt written">
@@ -542,12 +591,12 @@ function getSubjectTotalData(r) {
 }
 function getSubjectWiseComment(tp) {
   const p = safeNumber(tp);
-  if (p >= 90) return { category: "খুব ভালো অবস্থানে আছে", comment: "এই বিষয়ে শিক্ষার্থী খুব ভালো অবস্থানে আছে। বর্তমান প্রস্তুতি ও ধারাবাহিকতা ধরে রাখাই এখন সবচেয়ে গুরুত্বপূর্ণ। নিয়মিত অনুশীলন ও রিভিশন চালিয়ে গেলে ভালো ফলাফল ধরে রাখা সম্ভব।" };
-  if (p >= 80) return { category: "ভালো পথে আছে", comment: "এই বিষয়ে শিক্ষার্থী ভালো পথে আছে এবং প্রস্তুতি মোটামুটি লাইনে আছে। ছোট কোনো অধ্যায়, সূত্র বা ব্যাখ্যায় সামান্য দুর্বলতা থাকলে এখনই ঠিক করা ভালো, কারণ ছোট ভুল পরে বড় নম্বর কমিয়ে দিতে পারে।" };
-  if (p >= 65) return { category: "আরও ফোকাস দিলে ভালো উন্নতি হবে", comment: "এই বিষয়ে প্রস্তুতি এখনো পুরোপুরি সম্পন্ন হয়নি। কিছু টপিক আরও ভালোভাবে বুঝে পড়া দরকার। নিয়মিত রিভিশন ও ভুল হওয়া প্রশ্নগুলো আবার করলে দ্রুত উন্নতি সম্ভব।" };
-  if (p >= 50) return { category: "বুঝে পড়ার পদ্ধতি শক্ত করা দরকার", comment: "এই বিষয়ে শিক্ষার্থী হয়তো কিছু টপিক বুঝতে কষ্ট পাচ্ছে। শুধু বেশি পড়লেই হবে না, কীভাবে পড়ছে সেটিও দেখা দরকার। বেসিক আবার দেখে সমস্যার জায়গা খুঁজে বের করলে উন্নতি হবে।" };
-  if (p >= 30) return { category: "এখনো উন্নতির ভালো সুযোগ আছে", comment: "এই বিষয়ে এখনো উন্নতির সময় আছে। নিয়মিত ও আন্তরিকভাবে পড়লে মেন্টররা সঠিকভাবে সাহায্য করতে পারবেন। কোথায় ভুল হচ্ছে তা অভিজ্ঞ শিক্ষকের সাথে আলোচনা করা দরকার।" };
-  return { category: "এখন থেকেই বিশেষ মনোযোগ দরকার", comment: "এই বিষয়ে ফলাফল অনেক কম এসেছে, তাই এখন থেকেই বিশেষ মনোযোগ দরকার। প্রতিদিন নির্দিষ্ট সময় পড়া, বেসিক থেকে শুরু করা এবং মেন্টরের সাহায্য নেওয়া উচিত।" };
+  if (p >= 90) return { category: "দারুণ করছ, এভাবেই এগিয়ে যাও", comment: "এই বিষয়ে তোমার দখলটা সত্যিই ভালো। এখন নতুন করে চাপ নেওয়ার দরকার নেই—যেভাবে চলছ সেভাবেই নিয়মিত থাকো, আর মাঝে মাঝে আগের পড়াগুলোয় একটু চোখ বুলিয়ে নিও। এই ছন্দটা ধরে রাখতে পারলে পরীক্ষায় এই বিষয় নিয়ে তোমার আর চিন্তা থাকবে না।" };
+  if (p >= 80) return { category: "প্রায় গুছিয়ে এনেছ", comment: "তোমার প্রস্তুতি প্রায় ঠিক জায়গায় আছে। শুধু ছোটখাটো ফাঁকগুলো—একটা সূত্র, একটা বানান, কিংবা কোনো প্রশ্ন ঠিকমতো না বোঝা—এখনই ধরে নাও। এই ছোট ভুলগুলোই কিন্তু পরীক্ষায় বড় নম্বর খেয়ে ফেলে, তাই হালকাভাবে নিও না।" };
+  if (p >= 65) return { category: "আর একটু খাটলেই হয়ে যাবে", comment: "এই বিষয়ে এখনো কিছু জায়গা ফাঁকা রয়ে গেছে। যেসব অধ্যায় কঠিন লাগে সেগুলো বুঝে বুঝে পড়ো, আর যেসব প্রশ্নে ভুল করেছ সেগুলো নিজে হাতে আবার করে দেখো। একটু গুছিয়ে এগোলে অল্প দিনেই উন্নতিটা চোখে পড়বে।" };
+  if (p >= 50) return { category: "পড়ার ধরনটা একটু বদলাতে হবে", comment: "মনে হচ্ছে কিছু টপিক এখনো তোমার কাছে পরিষ্কার হয়নি। শুধু বেশি সময় পড়লেই হবে না—কীভাবে পড়ছ সেটাও দেখা দরকার। বেসিকটা আরেকবার ভালো করে দেখে নাও, আর ঠিক কোথায় আটকে যাচ্ছ সেটা মেন্টরকে বলো; একসাথে ঠিক করে দেব।" };
+  if (p >= 30) return { category: "এখনো ঘুরে দাঁড়ানোর অনেক সময় আছে", comment: "ভয় পেয়ো না, এই বিষয়ে এখনো ঘুরে দাঁড়ানোর যথেষ্ট সময় আছে। প্রতিদিন একটু একটু করে নিয়ম করে বসো, আর কোথায় সমস্যা হচ্ছে খোলাখুলি মেন্টরের সাথে কথা বলো। মন দিয়ে লেগে থাকলে এই বিষয়েই তুমি অবাক করার মতো উন্নতি করতে পারো।" };
+  return { category: "চলো, একদম গোড়া থেকে শুরু করি", comment: "এই বিষয়ে নম্বর অনেকটাই কম এসেছে, তবে এটাকে শেষ ভেবো না—নতুন করে শুরু করার সুযোগ ভাবো। দেরি না করে আজ থেকেই বেসিক ধরো, প্রতিদিন একটা নির্দিষ্ট সময় শুধু এই বিষয়ের জন্য রাখো, আর আটকে গেলেই মেন্টরের কাছে চলে এসো। ধাপে ধাপে এগোলে এখান থেকেও ভালো জায়গায় পৌঁছানো যায়।" };
 }
 function calculatePercentages(subjects) {
   let c = 0, ic = 0, sk = 0, mcq = 0, w = 0, wt = 0;
@@ -558,47 +607,34 @@ function calculatePercentages(subjects) {
     correctPercentage: calcPct(c, baseMcq), incorrectPercentage: calcPct(ic, baseMcq), skippedPercentage: calcPct(sk, baseMcq), writtenPercentage: calcPct(w, wt), totalPercentage: calcPct(totalObtained, totalMarks) };
 }
 const commentRules = [
-  { id: 8, category: "নতুনভাবে শুরু করার ভালো সময়", check: (p) => p.totalPercentage < 30, comment: "শিক্ষার্থীর ফলাফল দেখে বোঝা যাচ্ছে এখন পড়াশোনাকে নতুনভাবে গুছিয়ে শুরু করার সময়। বেসিক ধীরে ধীরে পরিষ্কার করা, প্রতিদিন নির্দিষ্ট সময় পড়া এবং মেন্টরের সাথে নিয়মিত যোগাযোগ রাখলে উন্নতির ভালো সুযোগ আছে।" },
-  { id: 1, category: "খুব ভালো অবস্থানে আছে", check: (p) => p.totalPercentage >= 90, comment: "শিক্ষার্থী খুব ভালো অবস্থানে আছে। এই ধারাবাহিকতা ধরে রাখতে নিয়মিত অনুশীলন, রিভিশন এবং পরীক্ষার সময় মনোযোগ বজায় রাখা প্রয়োজন। একইভাবে এগিয়ে গেলে আরও ভালো ফলাফলের সম্ভাবনা রয়েছে।" },
-  { id: 2, category: "ভালো, আত্মবিশ্বাস বাড়ালে ফল আরও ভালো হবে", check: (p) => p.totalPercentage < 90 && p.totalPercentage > 70 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "শিক্ষার্থীর প্রস্তুতি ভালো পর্যায়ে আছে। কিছু প্রশ্ন স্কিপ করা থেকে বোঝা যায়, জানা বিষয়েও আরও আত্মবিশ্বাস নিয়ে উত্তর করলে ফলাফল আরও ভালো হবে। নিয়মিত মডেল টেস্ট ও সাহস নিয়ে উত্তর করার চর্চা দরকার।" },
-  { id: 3, category: "ভালো, উত্তরে আরও মনোযোগ দরকার", check: (p) => p.totalPercentage < 90 && p.totalPercentage > 70 && p.incorrectPercentage > p.skippedPercentage + 5, comment: "শিক্ষার্থী ভালো করছে। তবে কিছু ভুল উত্তর কমাতে পারলে ফলাফল আরও স্থিতিশীল হবে। প্রশ্ন ভালোভাবে পড়ে, তাড়াহুড়া না করে নিশ্চিত হয়ে উত্তর করার অভ্যাস তৈরি করলে নম্বর বাড়বে।" },
-  { id: 4, category: "কৌশল ঠিক করলে ভালো উন্নতি হবে", check: (p) => p.totalPercentage >= 50 && p.totalPercentage <= 70 && p.skippedPercentage + 10 < p.incorrectPercentage, comment: "প্রস্তুতি মাঝামাঝি পর্যায়ে আছে। ভুলের জায়গা চিহ্নিত করে অধ্যায়ভিত্তিক অনুশীলন করলে ভালো উন্নতি সম্ভব। কোন ধরনের প্রশ্নে বেশি ভুল হচ্ছে তা দেখে মেন্টরের গাইডলাইন অনুযায়ী পড়লে ফলাফল ভালো হবে।" },
-  { id: 5, category: "আত্মবিশ্বাস ও চর্চা বাড়ালে উন্নতি হবে", check: (p) => p.totalPercentage >= 50 && p.totalPercentage <= 70 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "শিক্ষার্থী কিছু প্রশ্ন স্কিপ করছে। আত্মবিশ্বাস বাড়লে জানা প্রশ্নেও উত্তর করার সাহস পাবে। প্রতিদিন ছোট টেস্ট, নিয়মিত রিভিশন এবং সহজ থেকে কঠিন প্রশ্নে এগোলে ভালো উন্নতি হবে।" },
-  { id: 6, category: "পড়ার পদ্ধতি আরও কার্যকর করা দরকার", check: (p) => p.totalPercentage >= 30 && p.totalPercentage <= 50 && p.skippedPercentage + 5 < p.incorrectPercentage, comment: "পড়াশোনায় আরও গুছানো পদ্ধতি দরকার। ভুল কমাতে আগে বেসিক ধারণা পরিষ্কার করা, তারপর অধ্যায়ভিত্তিক অনুশীলন ভালো হবে। মেন্টরের পরামর্শে পড়ার ধরন পরিবর্তন করলে উন্নতির সুযোগ আছে।" },
-  { id: 7, category: "চর্চা ও আত্মবিশ্বাস বাড়ানোর সময়", check: (p) => p.totalPercentage >= 30 && p.totalPercentage <= 50 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "স্কিপ করা প্রশ্ন কিছুটা বেশি। নিজের প্রস্তুতির ওপর আত্মবিশ্বাস বাড়ালে স্কিপ করা প্রশ্নেও উত্তর করার চেষ্টা করতে পারবে। ছোট লক্ষ্য নিয়ে প্রতিদিন পড়া ও মেন্টরের সাথে আলোচনা করলে উন্নতি হবে।" },
+  { id: 8, category: "নতুন করে শুরু করার সময় এখনই", check: (p) => p.totalPercentage < 30, comment: "এবারের ফলাফলটা বলছে পড়াশোনাটা আবার নতুন করে গুছিয়ে শুরু করা দরকার। একসাথে সব ধরতে যেও না—বেসিক থেকে ধীরে ধীরে এগোও, প্রতিদিন একটা নির্দিষ্ট সময় বসো, আর যেখানে আটকাবে সেখানেই মেন্টরকে জানাও। বাড়ির কেউ একটু খেয়াল রাখলে আর তুমি লেগে থাকলে আবার ঠিক পথে ফেরা কঠিন কিছু না।" },
+  { id: 1, category: "অসাধারণ, এই ছন্দটা ধরে রাখো", check: (p) => p.totalPercentage >= 90, comment: "তুমি দারুণ একটা জায়গায় আছ। এখন তোমার একটাই কাজ—এই ছন্দটা নষ্ট হতে না দেওয়া। নিয়মিত অনুশীলন করো, পরীক্ষার সময় মাথা ঠান্ডা রেখে উত্তর দাও, আর ভালো করছি বলে গা ছেড়ে দিও না। এভাবে চললে সামনে আরও ভালো ফল তোমার জন্যই অপেক্ষা করছে।" },
+  { id: 2, category: "ভালো করছ, এবার একটু সাহস বাড়াও", check: (p) => p.totalPercentage < 90 && p.totalPercentage > 70 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "তোমার প্রস্তুতি বেশ ভালো জায়গায় আছে। তবে অনেক প্রশ্ন ছেড়ে দিচ্ছ, মানে জানা জিনিসেও তুমি একটু দ্বিধায় ভুগছ। মডেল টেস্ট দিয়ে, সময় ধরে অনুশীলন করে নিজের ওপর ভরসাটা বাড়াও। জানা প্রশ্নে সাহস করে কলম চালালে এই ছেড়ে দেওয়া প্রশ্নগুলো থেকেই বাড়তি নম্বর চলে আসবে।" },
+  { id: 3, category: "ভালো করছ, একটু সাবধানে উত্তর দাও", check: (p) => p.totalPercentage < 90 && p.totalPercentage > 70 && p.incorrectPercentage > p.skippedPercentage + 5, comment: "তুমি ভালোই করছ, শুধু ভুল উত্তরগুলো একটু কমাতে হবে। অনেক সময় তাড়াহুড়ো করে বা প্রশ্ন পুরোটা না পড়ে উত্তর দিলে এই ভুলগুলো হয়। প্রশ্নটা ঠান্ডা মাথায় পড়ো, নিশ্চিত হয়ে তারপর উত্তর দাও—দেখবে নম্বর নিজে থেকেই উঠে যাচ্ছে।" },
+  { id: 4, category: "কৌশলটা একটু ঠিক করলেই হবে", check: (p) => p.totalPercentage >= 50 && p.totalPercentage <= 70 && p.skippedPercentage + 10 < p.incorrectPercentage, comment: "তোমার প্রস্তুতি মাঝামাঝি জায়গায়, খারাপ না। এখন দরকার ভুলগুলো ধরে ফেলা—কোন অধ্যায়ে বা কোন ধরনের প্রশ্নে বারবার আটকাচ্ছ সেটা খুঁজে বের করো। সেই জায়গাগুলো আলাদা করে অনুশীলন করো আর মেন্টরের পরামর্শ মতো এগোও, ফল দ্রুত ভালো হবে।" },
+  { id: 5, category: "নিজের ওপর ভরসা রাখলেই এগিয়ে যাবে", check: (p) => p.totalPercentage >= 50 && p.totalPercentage <= 70 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "তুমি বেশ কিছু প্রশ্ন ছেড়ে দিচ্ছ, অথচ চেষ্টা করলে হয়তো অনেকগুলোরই উত্তর দিতে পারতে। আত্মবিশ্বাসটা একটু বাড়াও—প্রতিদিন ছোট ছোট টেস্ট দাও, সহজ প্রশ্ন থেকে শুরু করে আস্তে আস্তে কঠিনে যাও। নিজের ওপর ভরসা এলেই দেখবে ছেড়ে দেওয়া প্রশ্নেও হাত দিচ্ছ।" },
+  { id: 6, category: "পড়ার পদ্ধতিটা গুছিয়ে নিতে হবে", check: (p) => p.totalPercentage >= 30 && p.totalPercentage <= 50 && p.skippedPercentage + 5 < p.incorrectPercentage, comment: "তোমার পড়াটা আরেকটু গুছিয়ে করা দরকার। এখন বেশ ভুল হচ্ছে, তাই আগে বেসিক ধারণাগুলো পরিষ্কার করো, তারপর অধ্যায় ধরে ধরে অনুশীলন করো। মেন্টরের সাথে বসে পড়ার ধরনটা একটু বদলে নাও, আর ভুলগুলো নিয়ম করে আবার দেখো—উন্নতি আসবেই।" },
+  { id: 7, category: "চর্চা আর সাহস—দুটোই বাড়ানোর সময়", check: (p) => p.totalPercentage >= 30 && p.totalPercentage <= 50 && p.skippedPercentage + 5 > p.incorrectPercentage, comment: "তুমি অনেক প্রশ্ন ছেড়ে দিচ্ছ, যেটা ঠিক হচ্ছে না। নিজের প্রস্তুতির ওপর একটু আস্থা রাখো—সব না পারলেও যেগুলো পারো অন্তত সেগুলো করার চেষ্টা করো। ছোট লক্ষ্য নিয়ে প্রতিদিন পড়ো, সহজ প্রশ্ন আগে ধরো, আর সমস্যা হলে মেন্টরকে বলো; আস্তে আস্তে সব ঠিক হয়ে যাবে।" },
 ];
 function getInitialComment(pd) {
   const m = commentRules.find((r) => r.check(pd));
-  return { ruleId: m ? m.id : null, category: m ? m.category : "মেন্টরের পরামর্শ প্রয়োজন", comment: m ? m.comment : "ফলাফলটি নির্দিষ্ট ক্যাটাগরিতে পড়ছে না। বিষয়ভিত্তিক ফলাফল দেখে মেন্টরের সাথে আলোচনা করে পরবর্তী পরিকল্পনা করা ভালো।" };
+  return { ruleId: m ? m.id : null, category: m ? m.category : "মেন্টরের সাথে একটু বসা দরকার", comment: m ? m.comment : "তোমার ফলাফলটা ঠিক কোন ছকে ফেলব বোঝা যাচ্ছে না। তাই বিষয়ভিত্তিক নম্বরগুলো নিয়ে একবার মেন্টরের সাথে বসো—কোথায় ভালো আর কোথায় খামতি দেখে সামনের পরিকল্পনাটা একসাথে ঠিক করে নেব।" };
 }
 const sci = ["Physics", "Chemistry", "General Math", "Higher Math", "Biology", "BGS", "Physics 1st", "Physics 2nd", "Chemistry 1st", "Chemistry 2nd", "Biology 1st", "Biology 2nd", "Higher Math 1st", "Higher Math 2nd"];
-const nonSci = ["Bangla 1st", "Bangla 2nd", "English 1st", "English 2nd", "Religion", "ICT"];
-const mathS = ["Physics", "Chemistry", "General Math", "Higher Math", "Physics 1st", "Physics 2nd", "Chemistry 1st", "Chemistry 2nd", "Higher Math 1st", "Higher Math 2nd"];
-const nonMathS = ["Bangla 1st", "Bangla 2nd", "English 1st", "English 2nd", "Religion", "ICT", "Biology", "BGS", "Biology 1st", "Biology 2nd"];
+const general = ["Bangla 1st", "Bangla 2nd", "English 1st", "English 2nd", "Religion", "ICT"];
 const norm = (n) => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
 function byNames(subjects, names) { const a = names.map(norm); const out = {}; Object.entries(subjects || {}).forEach(([k, v]) => { if (a.includes(norm(k))) out[k] = v; }); return out; }
 function partition(title, subjects) { const pd = calculatePercentages(subjects); return { title, ...pd, ...getInitialComment(pd) }; }
-function sciCmp(s, ns) {
-  const a = s.totalPercentage || 0, b = ns.totalPercentage || 0, dev = Number(Math.abs(a - b).toFixed(2));
-  const weak = a < b ? "science" : b < a ? "nonScience" : "equal";
-  if (dev < 15) return { deviation: dev, weakerPart: weak, category: "Science ও Non-Science কাছাকাছি", comment: "দুই অংশের পারফরম্যান্স কাছাকাছি, যা ভালো ভারসাম্যের লক্ষণ। যে অংশে সামান্য কম নম্বর, সেখানে একটু বেশি রিভিশন দিলে সামগ্রিক ফলাফল আরও সুন্দর হবে।" };
+function sciCmp(s, g) {
+  const a = s.totalPercentage || 0, b = g.totalPercentage || 0, dev = Number(Math.abs(a - b).toFixed(2));
+  const weak = a < b ? "science" : b < a ? "general" : "equal";
+  if (dev < 15) return { deviation: dev, weakerPart: weak, category: "Science আর General—দুটোতেই ভারসাম্য ভালো", comment: "Science আর General দুই দিকেই তোমার অবস্থা প্রায় কাছাকাছি, এটা খুব ভালো লক্ষণ। যেদিকটায় নম্বর সামান্য কম এসেছে, সেখানে একটু বেশি রিভিশন দিলেই সব মিলিয়ে ফলটা আরও সুন্দর দেখাবে।" };
   if (dev <= 30) return weak === "science"
-    ? { deviation: dev, weakerPart: weak, category: "Science-এ বেশি সময় দিলে উন্নতি হবে", comment: "Science অংশে তুলনামূলকভাবে আরও মনোযোগ দিলে ভালো উন্নতি সম্ভব। Physics, Chemistry, Math ও Biology বুঝে পড়া এবং নিয়মিত সমস্যা সমাধান করলে ফলাফল ভালো হবে।" }
-    : { deviation: dev, weakerPart: weak, category: "Non-Science-এ রিভিশন বাড়ালে ভালো হবে", comment: "Non-Science অংশে আরও রিভিশন দরকার। Bangla, English, Religion ও ICT সহজ মনে হলেও নিয়মিত না পড়লে নম্বর কমে। প্রতিদিন অল্প সময় রিভিশন করলে উন্নতি হবে।" };
+    ? { deviation: dev, weakerPart: weak, category: "Science-এ একটু বেশি সময় দাও", comment: "General-এর তুলনায় Science-এ তুমি একটু পিছিয়ে আছ। Physics, Chemistry, Math, Biology—এগুলো মুখস্থ না করে বুঝে পড়ো আর নিয়মিত অঙ্ক ও সমস্যা মেলাও। একটু বাড়তি সময় দিলেই এই দিকটা সামলে যাবে।" }
+    : { deviation: dev, weakerPart: weak, category: "General অংশে রিভিশন একটু বাড়াও", comment: "Science-এর তুলনায় General বিষয়গুলোতে তুমি একটু পিছিয়ে। Bangla, English, Religion, ICT সহজ মনে হলেও নিয়মিত না দেখলে নম্বর পড়ে যায়। প্রতিদিন অল্প করে হলেও এগুলো রিভিশন দাও, পার্থক্যটা ঠিক কমে আসবে।" };
   return weak === "science"
-    ? { deviation: dev, weakerPart: weak, category: "Science-এর বেসিক শক্ত করা দরকার", comment: "Science অংশে পার্থক্য বেশি। বেসিক ধারণা পরিষ্কার করা, সূত্র ও কনসেপ্ট বুঝে পড়া এবং মেন্টরের গাইডলাইন অনুযায়ী নিয়মিত অনুশীলন দরকার।" }
-    : { deviation: dev, weakerPart: weak, category: "Non-Science-এ নিয়মিত পড়া দরকার", comment: "Non-Science অংশে পার্থক্য বেশি। এই বিষয়গুলোতে নিয়মিত পড়া, লেখা, মুখস্থ ও রিভিশন দরকার। প্রতিদিন নির্দিষ্ট সময় দিলে ফলাফল ভালো হবে।" };
-}
-function mathCmp(m, nm) {
-  const a = m.totalPercentage || 0, b = nm.totalPercentage || 0, dev = Number(Math.abs(a - b).toFixed(2));
-  const weak = a < b ? "math" : b < a ? "nonMath" : "equal";
-  if (dev < 10) return { deviation: dev, weakerPart: weak, category: "Mathematical ও Non-Math ভারসাম্য ভালো", comment: "দুই অংশের পারফরম্যান্স কাছাকাছি, যা ভালো ভারসাম্যের ইঙ্গিত দেয়। নিয়মিত অনুশীলন ও রিভিশন বজায় রাখলে দুই অংশেই আরও ভালো ফলাফল সম্ভব।" };
-  if (dev <= 30) return weak === "math"
-    ? { deviation: dev, weakerPart: weak, category: "Mathematical-এ অনুশীলন বাড়ানো দরকার", comment: "Mathematical অংশে আরও অনুশীলন করলে ভালো উন্নতি হবে। Math, Physics ও Chemistry-এর সমস্যা নিয়মিত সমাধান করলে সমস্যার জায়গা বোঝা যাবে এবং নম্বর বাড়বে।" }
-    : { deviation: dev, weakerPart: weak, category: "Non-Mathematical-এ রিভিশন দরকার", comment: "Non-Mathematical অংশে আরও রিভিশন দরকার। Bangla, English, Religion, ICT ও Biology নিয়মিত পড়া ও মনে রাখার অনুশীলন করলে ফলাফল ভালো হবে।" };
-  return weak === "math"
-    ? { deviation: dev, weakerPart: weak, category: "Mathematical-এর বেসিক শক্ত করা দরকার", comment: "Mathematical অংশে আরও মনোযোগ দরকার। নিয়মিত সমস্যা সমাধান, বেসিক ধারণা পরিষ্কার করা এবং মেন্টরের গাইডলাইন নিয়ে এগোলে ভালো উন্নতি সম্ভব।" }
-    : { deviation: dev, weakerPart: weak, category: "Non-Mathematical-এ নিয়মিত রিভিশন দরকার", comment: "Non-Mathematical অংশে পার্থক্য বেশি। বোঝা, মুখস্থ, লেখা ও নিয়মিত রিভিশন গুরুত্বপূর্ণ। প্রতিদিন নির্দিষ্ট সময় পড়লে ফলাফল উন্নত করা সম্ভব।" };
+    ? { deviation: dev, weakerPart: weak, category: "Science-এর বেসিকটা শক্ত করা দরকার", comment: "Science-এ পার্থক্যটা বেশ বড়। ঘাবড়ে না গিয়ে গোড়া থেকে ধরো—বেসিক কনসেপ্ট আর সূত্রগুলো ভালো করে বুঝে নাও, মেন্টরের সাহায্য নিয়ে নিয়মিত অনুশীলন করো। ঠিকভাবে শুরু করলে এই দূরত্বটা ধীরে ধীরে মিটে যাবে।" }
+    : { deviation: dev, weakerPart: weak, category: "General বিষয়গুলোতে নিয়মিত পড়া দরকার", comment: "General বিষয়গুলোতে অনেকটাই পিছিয়ে আছ। এই বিষয়গুলোতে নিয়মিত পড়া, লেখা আর রিভিশনের কোনো বিকল্প নেই। প্রতিদিন একটা নির্দিষ্ট সময় এগুলোর জন্য রাখো—অল্প দিনেই নম্বর উঠতে শুরু করবে।" };
 }
 function subjectBarsOf(subjects) {
   return Object.entries(subjects || {}).map(([name, r]) => {
@@ -609,7 +645,7 @@ function subjectBarsOf(subjects) {
 function consistency(subjects) {
   const bars = subjectBarsOf(subjects);
   const valid = bars.filter((i) => i.totalMarks > 0);
-  if (!valid.length) return { subjectBars: bars, averagePercentage: 0, level: "ডেটা পাওয়া যায়নি", comment: "পর্যাপ্ত তথ্য পাওয়া যায়নি।" };
+  if (!valid.length) return { subjectBars: bars, averagePercentage: 0, level: "ডেটা পাওয়া যায়নি", comment: "বিষয়ভিত্তিক হিসাব করার মতো যথেষ্ট তথ্য এখানে নেই।" };
   const pcts = valid.map((i) => i.totalPercentage).sort((a, b) => a - b);
   const mid = Math.floor(pcts.length / 2);
   const median = pcts.length % 2 === 0 ? (pcts[mid - 1] + pcts[mid]) / 2 : pcts[mid];
@@ -619,20 +655,17 @@ function consistency(subjects) {
   const low = valid.filter((i) => i.totalPercentage < 55).length;
   const lowRatio = Number(((low / valid.length) * 100).toFixed(2));
   let level, comment;
-  if (avg < 55 && lowRatio >= 60) { level = "নিয়মিত সংযোগ তৈরি করা দরকার"; comment = "বেশিরভাগ বিষয়ে ফলাফল কম। প্রতিদিন নির্দিষ্ট সময় পড়া, অধ্যায়ভিত্তিক ছোট লক্ষ্য ঠিক করা এবং মেন্টরের পর্যবেক্ষণে এগোলে ধীরে ধীরে ভালো উন্নতি সম্ভব।"; }
-  else if (avg < 70) { level = "মাঝারি পর্যায়ের প্রস্তুতি"; comment = "ফলাফল মাঝারি পর্যায়ে আছে। বেশি সময়, নিয়মিত অনুশীলন এবং কম নম্বর পাওয়া বিষয়গুলোতে আলাদা ফোকাস দরকার।"; }
-  else { level = "ভালো পথে আছে"; comment = "সামগ্রিকভাবে ভালো পথে আছে। অবস্থান ধরে রাখতে নিয়মিত অনুশীলন ও রিভিশন চালিয়ে যেতে হবে।"; }
+  if (avg < 55 && lowRatio >= 60) { level = "পড়ার সাথে নিয়মিত যোগটা শক্ত করা দরকার"; comment = "বেশিরভাগ বিষয়েই নম্বর কম এসেছে। দু-একটা বিষয়ে হঠাৎ ভালো বা খারাপ বাদ দিলেও বোঝা যাচ্ছে, পড়ার সাথে তোমার নিয়মিত যোগটা আরেকটু শক্ত হওয়া দরকার। প্রতিদিন নির্দিষ্ট সময় বসো, ছোট ছোট লক্ষ্য ঠিক করো, আর মেন্টরের নজরে থেকে এগোও—ধীরে ধীরে ঠিক ঘুরে দাঁড়াবে।"; }
+  else if (avg < 70) { level = "মাঝারি পর্যায়ের প্রস্তুতি"; comment = "তোমার প্রস্তুতি এখন মাঝামাঝি অবস্থায়। একটু বেশি সময়, একটু বেশি অনুশীলন আর কম নম্বর পাওয়া বিষয়গুলোতে আলাদা মনোযোগ দিলেই হবে। কোন কোন বিষয়ে ভালো করছ আর ঠিক কোথায় নম্বর হারাচ্ছ—সেটা দেখে প্রস্তুতির দিকটা গুছিয়ে নাও।"; }
+  else { level = "ভালো পথেই আছ"; comment = "সব মিলিয়ে তুমি ভালো পথেই আছ। এই জায়গাটা ধরে রাখতে নিয়মিত অনুশীলন আর রিভিশন চালিয়ে যাও। ভালো ফলের মধ্যেও একটু খেয়াল করো—কোন অংশে সবচেয়ে শক্তিশালী আর কোথায় আর একটু নজর দিলে ফলটা আরও ঝকঝকে হবে।"; }
   return { subjectBars: bars, averagePercentage: avg, medianPercentage: Number(median.toFixed(2)), lowSubjectCount: low, lowSubjectRatio: lowRatio, level, comment };
 }
 function generateStudentAnalysis(subjects) {
   const pd = calculatePercentages(subjects);
   const sciA = partition("Science", byNames(subjects, sci));
-  const nsA = partition("Non-Science", byNames(subjects, nonSci));
-  const mA = partition("Mathematical", byNames(subjects, mathS));
-  const nmA = partition("Non-Mathematical", byNames(subjects, nonMathS));
+  const generalA = partition("General", byNames(subjects, general));
   return { ...pd, ...getInitialComment(pd), subjectConsistency: consistency(subjects),
-    partitions: { science: sciA, nonScience: nsA, comparison: sciCmp(sciA, nsA) },
-    mathPartitions: { mathematical: mA, nonMathematical: nmA, comparison: mathCmp(mA, nmA) } };
+    partitions: { science: sciA, nonScience: generalA, comparison: sciCmp(sciA, generalA) } };
 }
 
 /* sample raw subjects -> analyzed -> rendered */
