@@ -247,16 +247,33 @@ const generalSubjects = [
   "ICT",
 ];
 
+// Used only for backend matching/classification.
+// Frontend display name remains unchanged because selected[subjectName] keeps original Excel key.
 function normalizeSubjectName(name) {
-  return String(name || "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(name || "")
+    .trim()
+    .replace(/[‐-‒–—―]/g, "-") // convert different dash types to normal hyphen
+    .replace(/\s+/g, " ")
+    .replace(/\s*\([^)]*\)\s*$/g, "") // remove tail like " (8)"
+    .replace(/\s*\[[^\]]*\]\s*$/g, "") // remove tail like " [8]"
+    .replace(/\s*-\s*[^-]+$/g, "") // remove tail like "-8", "- A", "- Section 1"
+    .replace(/\s+\d+$/g, "") // remove tail like " 8"
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 function getSubjectsByNames(subjects, allowedNames) {
-  const allowed = allowedNames.map(normalizeSubjectName);
+  const allowed = new Set(allowedNames.map(normalizeSubjectName));
   const selected = {};
 
   Object.entries(subjects || {}).forEach(([subjectName, value]) => {
-    if (allowed.includes(normalizeSubjectName(subjectName))) {
+    const subjectNameForMatching = normalizeSubjectName(subjectName);
+
+    if (allowed.has(subjectNameForMatching)) {
+      // Keep original Excel subject name for frontend display.
+      // Example: "Higher Math-8" will match "Higher Math",
+      // but frontend will still show "Higher Math-8".
       selected[subjectName] = value;
     }
   });
@@ -392,8 +409,7 @@ function generateSubjectConsistencyAnalysis(subjects) {
       averagePercentage: 0,
       consistentPercentage: 0,
       level: "ডেটা পাওয়া যায়নি",
-      comment:
-        "বিষয়ভিত্তিক হিসাব করার মতো যথেষ্ট তথ্য এখানে নেই।",
+      comment: "বিষয়ভিত্তিক হিসাব করার মতো যথেষ্ট তথ্য এখানে নেই।",
     };
   }
 
