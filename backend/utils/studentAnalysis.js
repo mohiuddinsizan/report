@@ -46,6 +46,124 @@ function getSubjectTotalData(result) {
   };
 }
 
+/**
+ * Used only for backend matching/classification.
+ * Frontend display name remains unchanged because selected[subjectName] keeps original Excel key.
+ *
+ * Example:
+ * "Higher Math-8" => "higher math"
+ * "Islam (8)" => "islam"
+ * "Hindu - A" => "hindu"
+ */
+function normalizeSubjectName(name) {
+  return String(name || "")
+    .trim()
+    .replace(/[‐-‒–—―]/g, "-") // convert different dash types to normal hyphen
+    .replace(/\s+/g, " ")
+    .replace(/\s*\([^)]*\)\s*$/g, "") // remove tail like " (8)"
+    .replace(/\s*\[[^\]]*\]\s*$/g, "") // remove tail like " [8]"
+    .replace(/\s*-\s*[^-]+$/g, "") // remove tail like "-8", "- A", "- Section 1"
+    .replace(/\s+\d+$/g, "") // remove tail like " 8"
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Alternative subjects:
+ * A student should normally attend only one subject from each group.
+ *
+ * Example:
+ * If a student has Islam data, Hindu should not count.
+ * If a student has Hindu data, Islam should not count.
+ *
+ * You can add more alternative groups later:
+ * ["Agriculture", "Higher Math"]
+ */
+const mutuallyExclusiveSubjectGroups = [
+  ["Islam", "Hindu"],
+];
+
+/**
+ * Checks whether the student actually has performance data in this subject.
+ *
+ * Important:
+ * We do NOT use mcqTotal/writtenTotal alone as "activity",
+ * because Excel may contain total columns for all subjects even when
+ * a student did not attend that optional subject.
+ */
+function getSubjectActivityScore(result) {
+  const correct = safeNumber(result?.correct);
+  const incorrect = safeNumber(result?.incorrect);
+  const skipped = safeNumber(result?.skipped);
+  const written = safeNumber(result?.written);
+
+  return correct + incorrect + skipped + written;
+}
+
+/**
+ * Remove unused alternative subjects per student.
+ *
+ * Example:
+ * subjects = {
+ *   Islam: { correct: 20, incorrect: 2, skipped: 3, mcqTotal: 25 },
+ *   Hindu: { correct: 0, incorrect: 0, skipped: 0, mcqTotal: 25 }
+ * }
+ *
+ * Result:
+ * Hindu is removed for this student.
+ */
+function filterMutuallyExclusiveSubjects(subjects) {
+  const cleanedSubjects = { ...(subjects || {}) };
+
+  mutuallyExclusiveSubjectGroups.forEach((group) => {
+    const normalizedGroup = group.map(normalizeSubjectName);
+
+    const matchingSubjects = Object.entries(cleanedSubjects).filter(
+      ([subjectName]) => normalizedGroup.includes(normalizeSubjectName(subjectName))
+    );
+
+    if (matchingSubjects.length <= 1) return;
+
+    const withActivity = matchingSubjects.map(([subjectName, result]) => ({
+      subjectName,
+      result,
+      activityScore: getSubjectActivityScore(result),
+      totalData: getSubjectTotalData(result),
+    }));
+
+    const activeSubjects = withActivity.filter((item) => item.activityScore > 0);
+
+    // If no subject has actual activity, remove all subjects in this alternative group.
+    if (activeSubjects.length === 0) {
+      withActivity.forEach((item) => {
+        delete cleanedSubjects[item.subjectName];
+      });
+      return;
+    }
+
+    // If one or more have data, keep the strongest one.
+    // Normally only one will have data.
+    activeSubjects.sort((a, b) => {
+      if (b.activityScore !== a.activityScore) {
+        return b.activityScore - a.activityScore;
+      }
+
+      return b.totalData.totalPercentage - a.totalData.totalPercentage;
+    });
+
+    const subjectToKeep = activeSubjects[0].subjectName;
+
+    withActivity.forEach((item) => {
+      if (item.subjectName !== subjectToKeep) {
+        delete cleanedSubjects[item.subjectName];
+      }
+    });
+  });
+
+  return cleanedSubjects;
+}
+
 function getSubjectWiseComment(totalPercentage) {
   const percentage = safeNumber(totalPercentage);
 
@@ -245,23 +363,10 @@ const generalSubjects = [
   "English 2nd",
   "Religion",
   "ICT",
+  "Agriculture",
+  "Islam",
+  "Hindu",
 ];
-
-// Used only for backend matching/classification.
-// Frontend display name remains unchanged because selected[subjectName] keeps original Excel key.
-function normalizeSubjectName(name) {
-  return String(name || "")
-    .trim()
-    .replace(/[‐-‒–—―]/g, "-") // convert different dash types to normal hyphen
-    .replace(/\s+/g, " ")
-    .replace(/\s*\([^)]*\)\s*$/g, "") // remove tail like " (8)"
-    .replace(/\s*\[[^\]]*\]\s*$/g, "") // remove tail like " [8]"
-    .replace(/\s*-\s*[^-]+$/g, "") // remove tail like "-8", "- A", "- Section 1"
-    .replace(/\s+\d+$/g, "") // remove tail like " 8"
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
 
 function getSubjectsByNames(subjects, allowedNames) {
   const allowed = new Set(allowedNames.map(normalizeSubjectName));
@@ -479,24 +584,29 @@ function generateSubjectConsistencyAnalysis(subjects) {
 }
 
 function generateStudentAnalysis(subjects) {
-  const percentageData = calculatePercentages(subjects);
+  // ✅ Main fix:
+  // Clean optional/alternative subjects per student before all calculations.
+  // Example: if Islam has data and Hindu is blank, Hindu will not affect percentage.
+  const cleanedSubjects = filterMutuallyExclusiveSubjects(subjects);
+
+  const percentageData = calculatePercentages(cleanedSubjects);
   const overallComment = getInitialComment(percentageData);
 
   const scienceAnalysis = generatePartitionAnalysis(
     "Science",
-    getSubjectsByNames(subjects, scienceSubjects)
+    getSubjectsByNames(cleanedSubjects, scienceSubjects)
   );
 
   const generalAnalysis = generatePartitionAnalysis(
     "General",
-    getSubjectsByNames(subjects, generalSubjects)
+    getSubjectsByNames(cleanedSubjects, generalSubjects)
   );
 
   return {
     ...percentageData,
     ...overallComment,
 
-    subjectConsistency: generateSubjectConsistencyAnalysis(subjects),
+    subjectConsistency: generateSubjectConsistencyAnalysis(cleanedSubjects),
 
     partitions: {
       science: scienceAnalysis,
@@ -513,4 +623,8 @@ module.exports = {
   generateStudentAnalysis,
   commentRules,
   getSubjectWiseComment,
+
+  // Optional exports for testing/debugging
+  normalizeSubjectName,
+  filterMutuallyExclusiveSubjects,
 };
