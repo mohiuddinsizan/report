@@ -13,12 +13,12 @@ function calculatePercentage(obtained, total) {
 }
 
 function getSubjectTotalData(result) {
-  const correct = safeNumber(result.correct);
-  const incorrect = safeNumber(result.incorrect);
-  const skipped = safeNumber(result.skipped);
-  const mcqTotal = safeNumber(result.mcqTotal);
-  const written = safeNumber(result.written);
-  const writtenTotal = safeNumber(result.writtenTotal);
+  const correct = safeNumber(result?.correct);
+  const incorrect = safeNumber(result?.incorrect);
+  const skipped = safeNumber(result?.skipped);
+  const mcqTotal = safeNumber(result?.mcqTotal);
+  const written = safeNumber(result?.written);
+  const writtenTotal = safeNumber(result?.writtenTotal);
 
   const attemptedMcqTotal = correct + incorrect + skipped;
   const finalMcqTotal = mcqTotal > 0 ? mcqTotal : attemptedMcqTotal;
@@ -76,12 +76,21 @@ function normalizeSubjectName(name) {
  * Example:
  * If a student has Islam data, Hindu should not count.
  * If a student has Hindu data, Islam should not count.
- *
- * You can add more alternative groups later:
- * ["Agriculture", "Higher Math"]
  */
 const mutuallyExclusiveSubjectGroups = [
   ["Islam", "Hindu"],
+];
+
+/**
+ * Optional subjects:
+ * These subjects should count only if the student has actual data.
+ *
+ * Example:
+ * Agriculture column may exist in Excel, but not every student attends Agriculture.
+ * If Agriculture has no correct/incorrect/skipped/written data, it will be removed.
+ */
+const optionalSubjectsThatNeedData = [
+  "Agriculture",
 ];
 
 /**
@@ -120,7 +129,8 @@ function filterMutuallyExclusiveSubjects(subjects) {
     const normalizedGroup = group.map(normalizeSubjectName);
 
     const matchingSubjects = Object.entries(cleanedSubjects).filter(
-      ([subjectName]) => normalizedGroup.includes(normalizeSubjectName(subjectName))
+      ([subjectName]) =>
+        normalizedGroup.includes(normalizeSubjectName(subjectName))
     );
 
     if (matchingSubjects.length <= 1) return;
@@ -159,6 +169,32 @@ function filterMutuallyExclusiveSubjects(subjects) {
         delete cleanedSubjects[item.subjectName];
       }
     });
+  });
+
+  return cleanedSubjects;
+}
+
+/**
+ * Remove optional subjects if that student has no actual data.
+ *
+ * Example:
+ * Agriculture column exists in Excel, but student did not attend Agriculture.
+ * Then Agriculture should not reduce the student's total percentage.
+ */
+function filterEmptyOptionalSubjects(subjects) {
+  const cleanedSubjects = { ...(subjects || {}) };
+  const optionalSet = new Set(optionalSubjectsThatNeedData.map(normalizeSubjectName));
+
+  Object.entries(cleanedSubjects).forEach(([subjectName, result]) => {
+    const normalizedName = normalizeSubjectName(subjectName);
+
+    if (!optionalSet.has(normalizedName)) return;
+
+    const activityScore = getSubjectActivityScore(result);
+
+    if (activityScore <= 0) {
+      delete cleanedSubjects[subjectName];
+    }
   });
 
   return cleanedSubjects;
@@ -584,10 +620,11 @@ function generateSubjectConsistencyAnalysis(subjects) {
 }
 
 function generateStudentAnalysis(subjects) {
-  // ✅ Main fix:
-  // Clean optional/alternative subjects per student before all calculations.
-  // Example: if Islam has data and Hindu is blank, Hindu will not affect percentage.
-  const cleanedSubjects = filterMutuallyExclusiveSubjects(subjects);
+  // Step 1: Remove unused Islam/Hindu alternative subject.
+  let cleanedSubjects = filterMutuallyExclusiveSubjects(subjects);
+
+  // Step 2: Remove optional subjects like Agriculture if the student has no data.
+  cleanedSubjects = filterEmptyOptionalSubjects(cleanedSubjects);
 
   const percentageData = calculatePercentages(cleanedSubjects);
   const overallComment = getInitialComment(percentageData);
@@ -627,4 +664,5 @@ module.exports = {
   // Optional exports for testing/debugging
   normalizeSubjectName,
   filterMutuallyExclusiveSubjects,
+  filterEmptyOptionalSubjects,
 };
