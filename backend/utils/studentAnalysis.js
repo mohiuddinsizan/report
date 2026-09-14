@@ -22,6 +22,52 @@
  * Percentages for a part that was not attended are `null`, NOT 0 — because
  * "did not attend" and "attended and scored 0" are different facts.
  * ============================================================
+ *
+ * ============================================================
+ * IDENTITY (name / roll)
+ * ============================================================
+ * This module does not read the Excel file. Whoever parses the sheet must
+ * pass the student's identity in:
+ *
+ *   generateStudentAnalysis(subjects, { student: { name, roll } })
+ *   generateStudentAnalysis(subjects, { name, roll })   // also accepted
+ *
+ * The returned analysis then carries `name`, `roll` and `student`.
+ * If nothing is passed, `name` and `roll` are null and every other number in
+ * the result is unchanged — identity never affects the math.
+ *
+ * `getStudentMetaFromRow(row)` is provided for the common case where the
+ * caller has a raw Excel row object and wants Name/Roll pulled out of it
+ * regardless of how the header was spelled.
+ * ============================================================
+ *
+ * ============================================================
+ * MERIT (rank)
+ * ============================================================
+ * Merit is a comparison BETWEEN students, so it cannot be produced by
+ * generateStudentAnalysis — that function only ever sees one student.
+ * A single-student analysis therefore always returns `merit: null`.
+ *
+ * To get merit, analyse the whole sheet at once:
+ *
+ *   generateMeritList([
+ *     { name: "...", roll: "...", subjects: { ... } },
+ *     ...
+ *   ])
+ *
+ * It returns the same analysis objects, sorted best-first, each with `merit`.
+ *
+ * Ranking rules:
+ *   - Primary key is totalPercentage, NOT total marks. Under the attendance
+ *     model two students can have different denominators, so raw marks are
+ *     not comparable but percentage is.
+ *   - Ties break on totalObtained, then totalCorrect, then attendedSubjectCount.
+ *   - Standard competition ranking: 1, 2, 2, 4 (not 1, 2, 2, 3).
+ *     Genuinely tied students share a rank and carry `meritTied: true`.
+ *   - A student with no attended parts at all (hasData === false) gets
+ *     `merit: null` and is placed at the end. Ranking someone who sat nothing
+ *     as "last" would be a false statement about their performance.
+ * ============================================================
  */
 
 const analysisConfig = {
@@ -49,8 +95,18 @@ const analysisConfig = {
   assumeWrittenTotalFromMarks: false,
 };
 
+/**
+ * Keys that carry identity rather than analysis behaviour. They are stripped
+ * before the options object is used as config, so a student's name can never
+ * be mistaken for a config flag.
+ */
+const identityOptionKeys = ["student", "name", "roll"];
+
 function resolveConfig(options) {
-  return { ...analysisConfig, ...(options || {}) };
+  const cleaned = { ...(options || {}) };
+  identityOptionKeys.forEach((key) => delete cleaned[key]);
+
+  return { ...analysisConfig, ...cleaned };
 }
 
 function safeNumber(value) {
@@ -82,6 +138,89 @@ function calculatePercentage(obtained, total) {
   if (!totalNumber || totalNumber <= 0) return 0;
 
   return Number(((obtainedNumber / totalNumber) * 100).toFixed(2));
+}
+
+// ============================================================
+// Identity helpers
+// ============================================================
+
+function cleanIdentityValue(value) {
+  if (value === null || value === undefined) return null;
+
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+/**
+ * Accepts any of these and returns a consistent { name, roll }:
+ *   { name, roll }
+ *   { Name, Roll }
+ *   { student: { name, roll } }
+ *   an options object that carries name/roll at the top level
+ */
+function normalizeStudentMeta(source) {
+  if (!source || typeof source !== "object") {
+    return { name: null, roll: null };
+  }
+
+  const nested =
+    source.student && typeof source.student === "object" ? source.student : null;
+
+  const name =
+    cleanIdentityValue(nested?.name) ??
+    cleanIdentityValue(nested?.Name) ??
+    cleanIdentityValue(source.name) ??
+    cleanIdentityValue(source.Name) ??
+    null;
+
+  const roll =
+    cleanIdentityValue(nested?.roll) ??
+    cleanIdentityValue(nested?.Roll) ??
+    cleanIdentityValue(source.roll) ??
+    cleanIdentityValue(source.Roll) ??
+    null;
+
+  return { name, roll };
+}
+
+/**
+ * Pull Name / Roll out of a raw Excel row no matter how the header was typed.
+ * Matches directly first, then case-insensitively on trimmed keys.
+ *
+ * Example:
+ *   getStudentMetaFromRow({ "Roll ": 100001, "Student Name": "Karim" })
+ *     => { name: "Karim", roll: "100001" }
+ */
+function getStudentMetaFromRow(row) {
+  if (!row || typeof row !== "object") {
+    return { name: null, roll: null };
+  }
+
+  const keys = Object.keys(row);
+  const lowerMap = new Map(keys.map((key) => [String(key).trim().toLowerCase(), key]));
+
+  function pick(candidates) {
+    for (const candidate of candidates) {
+      if (row[candidate] !== undefined) return row[candidate];
+    }
+
+    for (const candidate of candidates) {
+      const found = lowerMap.get(String(candidate).trim().toLowerCase());
+      if (found && row[found] !== undefined) return row[found];
+    }
+
+    return null;
+  }
+
+  const name = cleanIdentityValue(
+    pick(["Name", "name", "Student Name", "student_name", "student name"])
+  );
+
+  const roll = cleanIdentityValue(
+    pick(["Roll", "roll", "Roll No", "Roll Number", "roll_no", "roll number"])
+  );
+
+  return { name, roll };
 }
 
 /**
@@ -1257,6 +1396,10 @@ function generateSubjectConsistencyAnalysis(subjects, options) {
 function generateStudentAnalysis(subjects, options) {
   const config = resolveConfig(options);
 
+  // Identity is read from the ORIGINAL options, not the cleaned config —
+  // resolveConfig deliberately strips these keys.
+  const { name, roll } = normalizeStudentMeta(options);
+
   // Step 1: Remove unused Islam/Hindu alternative subject.
   let cleanedSubjects = filterMutuallyExclusiveSubjects(subjects, config);
 
@@ -1282,6 +1425,16 @@ function generateStudentAnalysis(subjects, options) {
   );
 
   return {
+    // ✅ identity — null when the caller did not supply it
+    name,
+    roll,
+    student: { name, roll },
+
+    // ✅ merit is a cross-student comparison; a single analysis cannot have one.
+    // generateMeritList / assignMeritRanks fill these in.
+    merit: null,
+    meritTied: false,
+
     ...percentageData,
     ...overallComment,
 
@@ -1297,11 +1450,168 @@ function generateStudentAnalysis(subjects, options) {
   };
 }
 
+// ============================================================
+// Merit / ranking
+// ============================================================
+
+/**
+ * The values merit is decided on, in priority order, all "higher is better".
+ *
+ * totalPercentage leads because the attendance model gives students different
+ * denominators — someone who sat 4 subjects and someone who sat 6 cannot be
+ * compared on raw marks, but they can be compared on percentage.
+ */
+function getMeritSortValues(analysis) {
+  return [
+    safeNumber(analysis?.totalPercentage),
+    safeNumber(analysis?.totalObtained),
+    safeNumber(analysis?.totalCorrect),
+    safeNumber(analysis?.attendedSubjectCount),
+  ];
+}
+
+function compareRollForDisplay(a, b) {
+  const rollA = String(a?.roll ?? "");
+  const rollB = String(b?.roll ?? "");
+
+  const numericA = Number(rollA);
+  const numericB = Number(rollB);
+
+  const bothNumeric =
+    rollA !== "" && rollB !== "" && Number.isFinite(numericA) && Number.isFinite(numericB);
+
+  if (bothNumeric && numericA !== numericB) return numericA - numericB;
+
+  return rollA.localeCompare(rollB);
+}
+
+/**
+ * Best first. Students with no attended parts sink to the bottom.
+ * Roll is only a display tiebreaker — it never affects the rank number.
+ */
+function compareStudentsForMerit(a, b) {
+  const aHasData = Boolean(a?.hasData);
+  const bHasData = Boolean(b?.hasData);
+
+  if (aHasData !== bHasData) return aHasData ? -1 : 1;
+
+  if (aHasData && bHasData) {
+    const valuesA = getMeritSortValues(a);
+    const valuesB = getMeritSortValues(b);
+
+    for (let i = 0; i < valuesA.length; i += 1) {
+      if (valuesA[i] !== valuesB[i]) return valuesB[i] - valuesA[i];
+    }
+  }
+
+  return compareRollForDisplay(a, b);
+}
+
+function isMeritTie(a, b) {
+  if (Boolean(a?.hasData) !== Boolean(b?.hasData)) return false;
+  if (!a?.hasData) return false;
+
+  const valuesA = getMeritSortValues(a);
+  const valuesB = getMeritSortValues(b);
+
+  return valuesA.every((value, index) => value === valuesB[index]);
+}
+
+/**
+ * Attach merit to a list of analyses produced by generateStudentAnalysis.
+ * Returns a NEW sorted array (best first); the input is not mutated.
+ *
+ * Standard competition ranking: 1, 2, 2, 4.
+ * Tied students share a rank and are flagged with meritTied.
+ * Students with hasData === false get merit: null and sit at the end.
+ */
+function assignMeritRanks(analyses) {
+  const sorted = [...(analyses || [])].sort(compareStudentsForMerit);
+
+  const rankedCount = sorted.filter((item) => item?.hasData).length;
+
+  let lastRanked = null;
+  let lastMerit = 0;
+  let position = 0;
+
+  return sorted.map((analysis) => {
+    if (!analysis?.hasData) {
+      return {
+        ...analysis,
+        merit: null,
+        meritTied: false,
+        meritTotal: rankedCount,
+      };
+    }
+
+    position += 1;
+
+    const tied = lastRanked !== null && isMeritTie(analysis, lastRanked);
+    const merit = tied ? lastMerit : position;
+
+    lastRanked = analysis;
+    lastMerit = merit;
+
+    return {
+      ...analysis,
+      merit,
+      meritTied: tied,
+      meritTotal: rankedCount,
+    };
+  }).map((analysis, index, all) => {
+    // Second pass: the FIRST student of a tied group also needs meritTied,
+    // since the flag above can only see backwards.
+    if (analysis.merit === null) return analysis;
+
+    const next = all[index + 1];
+    if (next && next.merit === analysis.merit) {
+      return { ...analysis, meritTied: true };
+    }
+
+    return analysis;
+  });
+}
+
+/**
+ * Analyse a whole sheet and rank it in one call.
+ *
+ * students: [{ name, roll, subjects }]
+ *   `subjects` may also be called `results` — both are accepted.
+ *
+ * Returns the analyses sorted best-first, each carrying name, roll and merit.
+ * `inputIndex` is kept so the caller can map back to its original row order.
+ */
+function generateMeritList(students, options) {
+  const analyses = (students || []).map((student, index) => {
+    const subjects = student?.subjects ?? student?.results ?? {};
+    const meta = normalizeStudentMeta(student);
+
+    return {
+      ...generateStudentAnalysis(subjects, {
+        ...(options || {}),
+        student: meta,
+      }),
+      inputIndex: index,
+    };
+  });
+
+  return assignMeritRanks(analyses);
+}
+
 module.exports = {
   generateStudentAnalysis,
   commentRules,
   getSubjectWiseComment,
   analysisConfig,
+
+  // ✅ merit / ranking
+  generateMeritList,
+  assignMeritRanks,
+  compareStudentsForMerit,
+
+  // ✅ identity helpers for the Excel parsing side
+  getStudentMetaFromRow,
+  normalizeStudentMeta,
 
   // Optional exports for testing/debugging
   normalizeSubjectName,

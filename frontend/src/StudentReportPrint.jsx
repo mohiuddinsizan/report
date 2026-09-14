@@ -6,11 +6,24 @@
      ...
      {students.length > 0 && <PrintableReports students={students} />}
    `students` is exactly the array your /upload-result endpoint returns
-   (each item has .roll, .subjects, .analysis from generateStudentAnalysis).
+   (each item has .roll, .name, .merit, .subjects, .analysis).
 
-   The default export below is a self-contained DEMO that builds 3 sample
-   students by running your OWN studentAnalysis logic, so what you preview here
-   is what real data will look like.
+   IDENTITY + MERIT
+   ----------------
+   The card leads with the student's NAME, because the person receiving this
+   sheet is a guardian — a roll number means nothing to them. Roll sits under
+   the name as the reference the coaching centre uses.
+
+   Merit is printed as "rank of N", never as a bare number. N is
+   analysis.meritTotal — the students who actually sat this exam IN THE
+   UPLOADED SHEET. If you upload one branch's file, the rank is a branch rank,
+   not a course-wide rank, and the "of N" is what keeps that honest on paper.
+
+   A student who attended nothing has merit === null. The card shows
+   "অনুপস্থিত" rather than ranking them last, which would be a false statement
+   about a child's performance on a document going home.
+
+   Set `order="merit"` on <PrintableReports> to print best-first.
 
    PRINT TIP: Print dialog -> Paper A4, Margins "None", turn ON "Background
    graphics" (colors won't print otherwise). Layout is already duplex-ready.
@@ -51,6 +64,7 @@ const css = `
   box-shadow:0 8px 24px rgba(56,189,248,.35);
 }
 .srp-print-btn:active{transform:translateY(1px);}
+.srp-print-btn:focus-visible{outline:3px solid #a5f3fc;outline-offset:3px;}
 .srp-tip{color:#cbd5e1;font-size:11.5px;background:rgba(255,255,255,.06);
   padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);}
 .srp-stage{background:#0a1120;padding:26px 14px 60px;display:flex;
@@ -71,21 +85,41 @@ const css = `
   clip-path:polygon(100% 0,0 0,100% 100%);}
 
 /* ---- HERO (front) ---- */
-.hero{display:flex;justify-content:space-between;align-items:stretch;gap:10px;
+.hero{display:flex;justify-content:space-between;align-items:stretch;gap:9px;
   padding:7mm 8mm;border-radius:14px;color:#fff;
   background:linear-gradient(120deg,#4338ca,#6d28d9 45%,#0ea5e9);
   box-shadow:0 6px 18px rgba(67,56,202,.25);}
-.hero .brand{display:flex;align-items:center;gap:10px;}
+.hero .brand{display:flex;align-items:center;gap:10px;min-width:0;}
 .hero .seal{width:13mm;height:13mm;border-radius:11px;display:flex;align-items:center;
   justify-content:center;font-family:var(--display);font-size:20px;font-weight:800;
-  background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.5);}
-.hero h1{font-family:var(--display);font-size:21px;margin:0;line-height:1.05;}
-.hero .sub{font-size:11.5px;opacity:.92;margin-top:2px;}
-.hero .right{text-align:right;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;}
-.hero .roll{font-size:10.5px;opacity:.85;letter-spacing:.5px;text-transform:uppercase;font-family:var(--num);}
-.hero .rollv{font-family:var(--num);font-weight:800;font-size:23px;line-height:1;}
+  background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.5);flex:none;}
+.hero h1{font-family:var(--display);font-size:19px;margin:0;line-height:1.05;}
+.hero .sub{font-size:11px;opacity:.92;margin-top:2px;}
+.hero .right{text-align:right;display:flex;flex-direction:column;justify-content:space-between;
+  align-items:flex-end;min-width:0;flex:1;}
 .hero .cat{margin-top:4px;background:rgba(255,255,255,.95);color:#3730a3;font-weight:800;
-  font-size:11px;padding:5px 11px;border-radius:999px;max-width:62mm;text-align:center;}
+  font-size:10.5px;padding:5px 11px;border-radius:999px;max-width:60mm;text-align:center;}
+
+/* identity: name leads, roll supports */
+.idName{font-family:var(--display);font-size:20px;line-height:1.1;font-weight:800;
+  max-width:68mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.idName.missing{font-family:var(--bn);font-size:14px;font-weight:600;opacity:.72;}
+.idRoll{font-family:var(--num);font-size:10.5px;opacity:.9;margin-top:2px;}
+.idRoll b{font-weight:800;font-size:12.5px;letter-spacing:.2px;}
+
+/* merit medal — the one loud element on the page */
+.medal{flex:none;align-self:center;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:0;min-width:25mm;padding:5px 9px;border-radius:13px;
+  background:linear-gradient(140deg,#fef3c7,#fcd34d 55%,#f59e0b);color:#4a2b00;
+  border:1.5px solid rgba(255,255,255,.6);box-shadow:0 4px 12px rgba(120,70,0,.25);}
+.medal .ml{font-size:8.5px;font-weight:700;}
+.medal .mv{font-family:var(--num);font-size:26px;font-weight:800;line-height:1.02;}
+.medal .mt{font-family:var(--num);font-size:8px;font-weight:600;opacity:.8;}
+.medal .mtie{font-size:7.6px;font-weight:700;background:rgba(74,43,0,.16);
+  padding:1px 6px;border-radius:999px;margin-top:2px;}
+.medal.absent{background:linear-gradient(140deg,#f1f5f9,#cbd5e1);color:#334155;
+  box-shadow:none;}
+.medal.absent .mv{font-size:20px;}
 
 /* stats strip */
 .statStrip{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:7px;}
@@ -122,17 +156,24 @@ const css = `
 
 /* footer */
 .pageFoot{margin-top:auto;padding-top:5px;display:flex;justify-content:space-between;
-  align-items:center;border-top:1px dashed var(--line);
+  align-items:center;gap:10px;border-top:1px dashed var(--line);
   font-family:var(--num);font-size:9px;color:#94a3b8;}
-.pageFoot .pill{background:#0f172a;color:#fff;padding:2px 9px;border-radius:999px;font-weight:700;}
+.pageFoot .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pageFoot .pill{background:#0f172a;color:#fff;padding:2px 9px;border-radius:999px;
+  font-weight:700;flex:none;}
 
 /* ---- BACK ---- */
-.backHead{display:flex;justify-content:space-between;align-items:center;padding:5mm 7mm;
-  border-radius:13px;color:#fff;background:linear-gradient(120deg,#0f766e,#0e7490 55%,#1d4ed8);}
-.backHead h1{font-family:var(--display);font-size:18px;margin:0;}
-.backHead .rt{text-align:right;font-family:var(--num);}
-.backHead .rt b{font-size:18px;display:block;}
-.backHead .rt span{font-size:10px;opacity:.85;}
+.backHead{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:5mm 7mm;border-radius:13px;color:#fff;
+  background:linear-gradient(120deg,#0f766e,#0e7490 55%,#1d4ed8);}
+.backHead .lt{min-width:0;}
+.backHead h1{font-family:var(--display);font-size:17px;margin:0;}
+.backHead .bhWho{font-size:11.5px;opacity:.92;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:95mm;}
+.backHead .bhWho b{font-family:var(--num);font-weight:700;}
+.backHead .rt{text-align:right;font-family:var(--num);flex:none;}
+.backHead .rt b{font-size:17px;display:block;line-height:1.1;}
+.backHead .rt span{font-size:9.5px;opacity:.85;}
 
 .donutRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
 .donutCard{border:1px solid var(--line);border-radius:12px;padding:6px 5px 7px;text-align:center;
@@ -160,6 +201,11 @@ const css = `
 .cmt.written{background:linear-gradient(120deg,#ecfeff,#eef2ff);border-left-color:#06b6d4;}
 .cmt.written h3{color:#0e7490;}
 
+/* merit explainer — keeps "rank" from being read as more than it is */
+.meritNote{margin-top:6px;border:1px dashed #cbd5e1;border-radius:10px;padding:6px 10px;
+  background:#f8fafc;font-size:8.6px;line-height:1.5;color:#64748b;}
+.meritNote b{color:#334155;}
+
 /* ---------- PRINT ---------- */
 @media print{
   @page{size:A4;margin:0;}
@@ -181,6 +227,65 @@ function bandColor(p) {
   if (v >= 50) return { bar: "#c2410c", bg: "#ffedd5", text: "#9a3412", label: "মনোযোগ দরকার" };
   if (v >= 30) return { bar: "#b91c1c", bg: "#fee2e2", text: "#991b1b", label: "দুর্বল" };
   return { bar: "#475569", bg: "#f1f5f9", text: "#334155", label: "বিশেষ মনোযোগ" };
+}
+
+/* ======================= IDENTITY / MERIT HELPERS ========================= */
+
+/**
+ * Backend puts name + merit on the student AND inside analysis.
+ * Read both so this component works with either shape.
+ */
+function readIdentity(student) {
+  const a = student?.analysis || {};
+
+  const rawName = student?.name ?? a.name ?? "";
+  const name = String(rawName || "").trim();
+
+  const rawRoll = student?.roll ?? a.roll ?? "";
+  const roll = String(rawRoll ?? "").trim();
+
+  const merit = student?.merit ?? a.merit ?? null;
+  const meritTotal = Number(a.meritTotal) || 0;
+  const meritTied = Boolean(a.meritTied);
+
+  return { name, roll, merit, meritTotal, meritTied, hasName: name.length > 0 };
+}
+
+/** Never invent a name. If the sheet had none, say so plainly. */
+function displayName(identity) {
+  return identity.hasName ? identity.name : "নাম দেওয়া নেই";
+}
+
+/** One line that identifies the child on footers and headers. */
+function whoLine(identity) {
+  return identity.hasName
+    ? `${identity.name} · Roll ${identity.roll}`
+    : `Roll ${identity.roll}`;
+}
+
+function MeritMedal({ identity }) {
+  if (identity.merit === null || identity.merit === undefined) {
+    return (
+      <div className="medal absent">
+        <span className="ml">মেধাক্রম</span>
+        <span className="mv">—</span>
+        <span className="mt">অনুপস্থিত</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="medal">
+      <span className="ml">মেধাক্রম</span>
+      <span className="mv">{identity.merit}</span>
+      {identity.meritTotal > 0 && (
+        <span className="mt">
+          {identity.meritTotal} জনের মধ্যে
+        </span>
+      )}
+      {identity.meritTied && <span className="mtie">যুগ্মভাবে</span>}
+    </div>
+  );
 }
 
 /* ============ WRITTEN-PERCENTAGE COMMENT (frontend, mentor voice) ========= */
@@ -384,6 +489,8 @@ const BRAND = { name: "BIG BANG EXAM CARE", exam: "মডেল টেস্ট 
 
 function FrontPage({ student }) {
   const a = student.analysis || {};
+  const identity = readIdentity(student);
+
   const bars = (a.subjectConsistency?.subjectBars || [])
     .map((s) => ({ subject: s.subject, pct: s.totalPercentage || s.percentage || 0 }))
     .sort((x, y) => y.pct - x.pct);
@@ -391,6 +498,7 @@ function FrontPage({ student }) {
     (x, y) => (y.totalPercentage || 0) - (x.totalPercentage || 0)
   );
   const col = bandColor(a.totalPercentage || 0);
+
   return (
     <div className="srp-page" style={{ "--ribbon": "linear-gradient(180deg,#6366f1,#22d3ee)" }}>
       <div className="corner" />
@@ -402,10 +510,15 @@ function FrontPage({ student }) {
             <div className="sub">{BRAND.exam}</div>
           </div>
         </div>
+
+        <MeritMedal identity={identity} />
+
         <div className="right">
           <div>
-            <div className="roll">Roll</div>
-            <div className="rollv">{student.roll}</div>
+            <div className={identity.hasName ? "idName" : "idName missing"} title={displayName(identity)}>
+              {displayName(identity)}
+            </div>
+            <div className="idRoll">Roll <b>{identity.roll || "—"}</b></div>
           </div>
           <div className="cat">{a.category}</div>
         </div>
@@ -465,7 +578,7 @@ function FrontPage({ student }) {
       </div>
 
       <div className="pageFoot">
-        <span>{BRAND.name} · Roll {student.roll}</span>
+        <span className="who">{BRAND.name} · {whoLine(identity)}</span>
         <span className="pill">Page 1 / 2 — Front</span>
       </div>
     </div>
@@ -475,14 +588,25 @@ function FrontPage({ student }) {
 function BackPage({ student }) {
   const a = student.analysis || {};
   const p = a.partitions || {};
+  const identity = readIdentity(student);
   const written = getWrittenComment(a.writtenPercentage || 0);
+
   return (
     <div className="srp-page" style={{ "--ribbon": "linear-gradient(180deg,#0d9488,#2563eb)" }}>
       <div className="corner" />
       <div className="backHead">
-        <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
+        <div className="lt">
+          <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
+          <div className="bhWho">
+            {displayName(identity)} · Roll <b>{identity.roll || "—"}</b>
+          </div>
+        </div>
         <div className="rt">
-          <b>Roll {student.roll}</b>
+          <b>
+            {identity.merit === null || identity.merit === undefined
+              ? "মেধাক্রম —"
+              : `মেধাক্রম ${identity.merit}`}
+          </b>
           <span>মোট {a.totalPercentage || 0}% · লিখিত {a.writtenPercentage || 0}%</span>
         </div>
       </div>
@@ -540,8 +664,24 @@ function BackPage({ student }) {
         <p>{written.comment}</p>
       </div>
 
+      {/* States plainly what the rank covers, so a guardian doesn't read it
+          as something larger than the students in this exam. */}
+      <div className="meritNote">
+        {identity.merit === null || identity.merit === undefined ? (
+          <>
+            <b>মেধাক্রম:</b> এই পরীক্ষায় কোনো অংশে অংশগ্রহণ না থাকায় মেধাক্রম নির্ধারণ করা হয়নি।
+          </>
+        ) : (
+          <>
+            <b>মেধাক্রম {identity.merit}</b>
+            {identity.meritTotal > 0 && ` — এই পরীক্ষায় অংশগ্রহণকারী ${identity.meritTotal} জন শিক্ষার্থীর মধ্যে`}
+            {identity.meritTied && " (একই নম্বর পাওয়ায় যুগ্মভাবে)"}। মেধাক্রম মোট প্রাপ্ত শতাংশের ভিত্তিতে নির্ধারিত।
+          </>
+        )}
+      </div>
+
       <div className="pageFoot">
-        <span>{BRAND.name} · Roll {student.roll}</span>
+        <span className="who">{BRAND.name} · {whoLine(identity)}</span>
         <span className="pill">Page 2 / 2 — Back</span>
       </div>
     </div>
@@ -549,18 +689,37 @@ function BackPage({ student }) {
 }
 
 /* ===================== PUBLIC: PrintableReports ========================== */
-export function PrintableReports({ students = [] }) {
+/**
+ * order: "sheet" (default, Excel row order) | "merit" (best first)
+ */
+export function PrintableReports({ students = [], order = "sheet" }) {
+  const list = useMemo(() => {
+    if (order !== "merit") return students;
+
+    return [...students].sort((x, y) => {
+      const mx = x?.merit ?? x?.analysis?.merit ?? null;
+      const my = y?.merit ?? y?.analysis?.merit ?? null;
+
+      // unranked (attended nothing) always last, never "worst"
+      if (mx === null && my === null) return 0;
+      if (mx === null) return 1;
+      if (my === null) return -1;
+
+      return mx - my;
+    });
+  }, [students, order]);
+
   return (
     <div className="srp-root">
       <style>{css}</style>
       <div className="srp-toolbar">
         <h2>Report Cards</h2>
-        <span className="muted">{students.length} students · {students.length * 2} pages (A4, duplex)</span>
+        <span className="muted">{list.length} students · {list.length * 2} pages (A4, duplex)</span>
         <span className="srp-tip">Print → A4 · Margins: None · ✓ Background graphics</span>
         <button className="srp-print-btn" onClick={() => window.print()}>🖨 Print All Report Cards</button>
       </div>
       <div className="srp-stage">
-        {students.map((s) => (
+        {list.map((s) => (
           <React.Fragment key={s.id ?? s.roll}>
             <FrontPage student={s} />
             <BackPage student={s} />
@@ -668,21 +827,47 @@ function generateStudentAnalysis(subjects) {
     partitions: { science: sciA, nonScience: generalA, comparison: sciCmp(sciA, generalA) } };
 }
 
+/* demo-only merit: competition ranking on total percentage (1, 2, 2, 4) */
+function assignDemoMerit(list) {
+  const ranked = [...list].sort(
+    (a, b) => (b.analysis.totalPercentage || 0) - (a.analysis.totalPercentage || 0)
+  );
+  let lastPct = null, lastMerit = 0;
+  ranked.forEach((s, i) => {
+    const pct = s.analysis.totalPercentage || 0;
+    const merit = pct === lastPct ? lastMerit : i + 1;
+    lastPct = pct; lastMerit = merit;
+    s.merit = merit;
+    s.analysis.merit = merit;
+    s.analysis.meritTotal = ranked.length;
+    s.analysis.meritTied = false;
+  });
+  ranked.forEach((s, i) => {
+    const prev = ranked[i - 1], next = ranked[i + 1];
+    if ((prev && prev.merit === s.merit) || (next && next.merit === s.merit)) {
+      s.analysis.meritTied = true;
+    }
+  });
+  return list;
+}
+
 /* sample raw subjects -> analyzed -> rendered */
 const subj = (correct, incorrect, skipped, written) => ({ correct, incorrect, skipped, mcqTotal: 25, written, writtenTotal: 50 });
 const SUBJECT_NAMES = ["Physics 1st", "Physics 2nd", "Chemistry 1st", "Chemistry 2nd", "Higher Math 1st", "Higher Math 2nd", "Biology 1st", "Biology 2nd", "Bangla 1st", "Bangla 2nd", "English 1st", "English 2nd", "ICT"];
 const RAW = {
-  "101": [[22,2,1,42],[20,3,2,40],[23,1,1,45],[21,2,2,43],[19,4,2,38],[18,5,2,36],[24,1,0,46],[22,2,1,44],[20,3,2,41],[21,2,2,40],[17,5,3,35],[16,6,3,33],[23,1,1,44]],
-  "214": [[13,7,5,24],[11,8,6,22],[15,6,4,28],[12,8,5,25],[9,9,7,18],[8,10,7,16],[16,5,4,30],[14,6,5,27],[17,5,3,31],[16,5,4,30],[12,8,5,23],[11,9,5,21],[18,4,3,33]],
-  "356": [[6,10,9,12],[5,11,9,10],[8,9,8,15],[6,10,9,13],[4,12,9,8],[3,13,9,7],[10,8,7,18],[9,8,8,17],[12,7,6,22],[11,7,7,20],[7,10,8,14],[6,11,8,12],[13,6,6,24]],
+  "101": { name: "সাদিয়া ইসলাম", rows: [[22,2,1,42],[20,3,2,40],[23,1,1,45],[21,2,2,43],[19,4,2,38],[18,5,2,36],[24,1,0,46],[22,2,1,44],[20,3,2,41],[21,2,2,40],[17,5,3,35],[16,6,3,33],[23,1,1,44]] },
+  "214": { name: "মোঃ রাকিবুল হাসান", rows: [[13,7,5,24],[11,8,6,22],[15,6,4,28],[12,8,5,25],[9,9,7,18],[8,10,7,16],[16,5,4,30],[14,6,5,27],[17,5,3,31],[16,5,4,30],[12,8,5,23],[11,9,5,21],[18,4,3,33]] },
+  "356": { name: "", rows: [[6,10,9,12],[5,11,9,10],[8,9,8,15],[6,10,9,13],[4,12,9,8],[3,13,9,7],[10,8,7,18],[9,8,8,17],[12,7,6,22],[11,7,7,20],[7,10,8,14],[6,11,8,12],[13,6,6,24]] },
 };
-const SAMPLE_STUDENTS = Object.entries(RAW).map(([roll, rows], idx) => {
-  const subjects = {};
-  SUBJECT_NAMES.forEach((nm, i) => { const [c, ic, sk, w] = rows[i]; subjects[nm] = subj(c, ic, sk, w); });
-  return { id: idx + 1, roll, subjects, analysis: generateStudentAnalysis(subjects) };
-});
+const SAMPLE_STUDENTS = assignDemoMerit(
+  Object.entries(RAW).map(([roll, { name, rows }], idx) => {
+    const subjects = {};
+    SUBJECT_NAMES.forEach((nm, i) => { const [c, ic, sk, w] = rows[i]; subjects[nm] = subj(c, ic, sk, w); });
+    return { id: idx + 1, roll, name, subjects, analysis: generateStudentAnalysis(subjects) };
+  })
+);
 
 export default function App() {
   const students = useMemo(() => SAMPLE_STUDENTS, []);
-  return <PrintableReports students={students} />;
+  return <PrintableReports students={students} order="merit" />;
 }

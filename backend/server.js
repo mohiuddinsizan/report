@@ -3,7 +3,7 @@ const cors = require("cors");
 const multer = require("multer");
 const xlsx = require("xlsx");
 
-const { generateStudentAnalysis } = require("./utils/studentAnalysis");
+const { generateMeritList } = require("./utils/studentAnalysis");
 
 const app = express();
 const PORT = 5000;
@@ -16,6 +16,29 @@ const upload = multer({ storage: multer.memoryStorage() });
 function clean(value) {
   return String(value || "").trim().toLowerCase();
 }
+
+/**
+ * Header text with inner whitespace collapsed, so "Student  Name" and
+ * "Student Name" match the same entry.
+ */
+function headerKey(value) {
+  return clean(value).replace(/\s+/g, " ");
+}
+
+/**
+ * Identity columns. These sit before the subject blocks and have a BLANK
+ * second row, so they must be detected before the "main !== ''" branch —
+ * otherwise "Name" would be treated as a subject title.
+ */
+const rollHeaders = new Set(["roll", "roll no", "roll number", "roll_no"]);
+
+const nameHeaders = new Set([
+  "name",
+  "student name",
+  "student_name",
+  "students name",
+  "student's name",
+]);
 
 function normalizeField(value) {
   const field = clean(value).replace(/\s+/g, "_");
@@ -116,8 +139,16 @@ app.post("/api/upload-result", upload.single("file"), (req, res) => {
       const main = String(mainHeader || "").trim();
       const sub = String(fieldRow[index] || "").trim();
 
-      if (clean(main) === "roll") {
+      const mainKey = headerKey(main);
+
+      if (rollHeaders.has(mainKey)) {
         return { type: "roll" };
+      }
+
+      // ✅ Name is an identity column, not a subject. Checked here so it never
+      // reaches the branch below and becomes currentSubject.
+      if (nameHeaders.has(mainKey)) {
+        return { type: "name" };
       }
 
       if (main !== "") {
@@ -141,6 +172,7 @@ app.post("/api/upload-result", upload.single("file"), (req, res) => {
       const student = {
         id: students.length + 1,
         roll: "",
+        name: "",
         subjects: {},
       };
 
@@ -149,6 +181,12 @@ app.post("/api/upload-result", upload.single("file"), (req, res) => {
 
         if (col.type === "roll") {
           student.roll = value;
+          return;
+        }
+
+        // ✅ Name is text, so it must NOT go through toNumber()
+        if (col.type === "name") {
+          student.name = String(value || "").trim();
           return;
         }
 
@@ -193,14 +231,43 @@ app.post("/api/upload-result", upload.single("file"), (req, res) => {
       });
 
       if (student.roll !== "") {
-        student.analysis = generateStudentAnalysis(student.subjects);
         students.push(student);
       }
     }
 
+    // ✅ Merit is a comparison ACROSS students, so the whole sheet is analysed
+    // in one call. Analysing each student separately (the old loop) can never
+    // produce a rank, because a single analysis has nothing to compare against.
+    const analyses = generateMeritList(
+      students.map((student) => ({
+        name: student.name,
+        roll: student.roll,
+        subjects: student.subjects,
+      }))
+    );
+
+    // generateMeritList returns best-first, so inputIndex maps each analysis
+    // back to its original sheet row.
+    analyses.forEach((analysis) => {
+      const student = students[analysis.inputIndex];
+      if (!student) return;
+
+      student.analysis = analysis;
+      student.merit = analysis.merit;
+    });
+
+    // students stays in SHEET order so existing frontend code keeps working.
+    // meritOrder lists student ids best-first for rendering a merit table.
+    const meritOrder = analyses
+      .filter((analysis) => analysis.merit !== null)
+      .map((analysis) => students[analysis.inputIndex]?.id)
+      .filter((id) => id !== undefined);
+
     res.json({
       success: true,
       totalStudents: students.length,
+      totalRanked: meritOrder.length,
+      meritOrder,
       students,
     });
   } catch (error) {

@@ -779,3 +779,152 @@ button {
     flex-direction: column;
   }
 }
+
+
+/* =============================================================================
+   merit-identity.css
+   Append these rules to the END of your existing stylesheet (the one with
+   .studentCard / .detailsHero / .heroStats). Nothing here overrides an
+   existing rule — every selector is either new or a new modifier class.
+============================================================================= */
+
+/* ---------- Modal hero: name leads, roll supports, merit stands out ------- */
+
+.detailsEyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7dd3fc;
+  margin-bottom: 10px;
+}
+
+.identityRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.identityText {
+  min-width: 0;
+}
+
+/* overrides nothing: .detailsHero h1 keeps its size, this adds truncation */
+.studentName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* A blank Name column is shown as a state, not left empty — staff need to
+   notice it so the sheet can be corrected before printing. */
+.studentName.missing {
+  font-size: 26px;
+  font-weight: 600;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.meritBadge {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 132px;
+  padding: 14px 20px;
+  border-radius: 20px;
+  background: linear-gradient(140deg, #fef3c7, #fcd34d 55%, #f59e0b);
+  color: #4a2b00;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 12px 28px rgba(180, 100, 0, 0.28);
+}
+
+.meritBadge .meritLabel {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meritBadge .meritValue {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.meritBadge .meritScope {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+  text-align: center;
+}
+
+/* Attended nothing: no rank at all. Never render such a student as "last". */
+.meritBadge.absent {
+  background: linear-gradient(140deg, #334155, #1e293b);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.4);
+  box-shadow: none;
+}
+
+/* ---------- Student list card: name beside roll -------------------------- */
+
+.studentTop .studentIdentity {
+  min-width: 0;
+}
+
+.studentTop .studentIdentity h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studentTop .studentRoll {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.meritChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  background: rgba(251, 191, 36, 0.16);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  white-space: nowrap;
+}
+
+.meritChip b {
+  font-size: 18px;
+}
+
+.meritChip.absent {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+@media (max-width: 800px) {
+  .identityRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meritBadge {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .meritBadge .meritValue {
+    font-size: 30px;
+  }
+}

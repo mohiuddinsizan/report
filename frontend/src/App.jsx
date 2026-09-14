@@ -2,9 +2,25 @@
    App.jsx — Result Report Card Printer (single self-contained file)
 
    Settings (top of file):
-     • API_URL  -> backend upload endpoint
-     • PREVIEW  -> true shows 3 demo students; set false to start empty
-     • bigbang.png -> place in your public/ folder (served at /bigbang.png)
+     • API_URL      -> backend upload endpoint
+     • PREVIEW      -> true shows 3 demo students; set false to start empty
+     • PRINT_ORDER  -> "sheet" (Excel row order) | "merit" (best first)
+     • bigbang.png  -> place in your public/ folder (served at /bigbang.png)
+
+   NAME + MERIT
+   ------------
+   The card leads with the student's NAME. A guardian holding this sheet does
+   not know their child's roll number, so the name is the identifier that
+   matters and the roll sits under it as the centre's own reference.
+
+   Merit prints as "rank of N", never as a bare number. N is
+   analysis.meritTotal — the students who sat this exam IN THE UPLOADED FILE.
+   Upload one branch's sheet and the rank is a branch rank; the "of N" is what
+   keeps that honest on paper.
+
+   A student who attended nothing has merit === null and shows "অনুপস্থিত".
+   Ranking them last would state something false about a child on a document
+   that goes home.
 
    PRINT: dialog -> A4 · Margins: None · turn ON "Background graphics".
    Each student = 2 pages (front + back), duplex-ready.
@@ -12,8 +28,10 @@
 
 import React, { useState, useMemo } from "react";
 
-const API_URL = "https://report-9coj.onrender.com/api/upload-result";
+// const API_URL = "https://report-9coj.onrender.com/api/upload-result";
+const API_URL = "http://localhost:5000/api/upload-result";
 const PREVIEW = true;
+const PRINT_ORDER = "sheet"; // "sheet" | "merit"
 
 const BRAND = {
   name: "BIG BANG EXAM CARE",
@@ -63,7 +81,11 @@ const CSS = `
 .srp-btn.print{background:linear-gradient(135deg,#fcd34d,#fb923c);box-shadow:0 8px 22px rgba(251,146,60,.45);}
 .srp-btn:disabled{opacity:.55;cursor:not-allowed;}
 .srp-btn:active{transform:translateY(1px);}
+.srp-btn:focus-visible{outline:3px solid #a5f3fc;outline-offset:3px;}
 .srp-tip{width:100%;font-size:11px;color:#aeb8e0;font-family:var(--num);}
+.srp-warn{width:100%;font-size:11.5px;font-family:var(--num);color:#fde68a;
+  background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);
+  border-radius:9px;padding:7px 11px;}
 
 .srp-empty{padding:80px 24px;text-align:center;color:#64748b;font-family:var(--num);
   background:#f6f7fb;min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
@@ -83,17 +105,34 @@ const CSS = `
   background:var(--rb);opacity:.06;}
 
 /* ===== FRONT hero ===== */
-.hd{display:flex;justify-content:space-between;align-items:center;padding:6mm 7mm;border-radius:15px;color:#fff;
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6mm 7mm;border-radius:15px;color:#fff;
   background:linear-gradient(120deg,#4c1d95,#6d28d9 42%,#1d4ed8);box-shadow:0 8px 22px rgba(76,29,149,.3);}
-.hd .lf{display:flex;align-items:center;gap:11px;}
+.hd .lf{display:flex;align-items:center;gap:11px;min-width:0;}
 .hd .seal{width:14mm;height:14mm;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  background:#fff;overflow:hidden;padding:1.5mm;box-shadow:0 4px 12px rgba(0,0,0,.18);}
+  background:#fff;overflow:hidden;padding:1.5mm;box-shadow:0 4px 12px rgba(0,0,0,.18);flex:none;}
 .hd .seal img{width:100%;height:100%;object-fit:contain;}
-.hd h1{font-family:var(--display);font-size:22px;margin:0;line-height:1.02;}
+.hd h1{font-family:var(--display);font-size:20px;margin:0;line-height:1.02;}
 .hd .ex{font-size:11px;opacity:.9;margin-top:2px;}
-.hd .rt{text-align:right;}
-.hd .rl{font-family:var(--num);font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:.8;}
-.hd .rv{font-family:var(--num);font-weight:800;font-size:26px;line-height:1;}
+.hd .rt{text-align:right;min-width:0;}
+
+/* name leads, roll supports */
+.hd .snm{font-family:var(--display);font-size:20px;font-weight:800;line-height:1.08;
+  max-width:66mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hd .snm.miss{font-family:var(--bn);font-size:13.5px;font-weight:600;opacity:.72;}
+.hd .rl{font-family:var(--num);font-size:10px;opacity:.85;margin-top:3px;}
+.hd .rl b{font-weight:800;font-size:13px;letter-spacing:.3px;}
+
+/* merit medal — the one loud element on the sheet */
+.medal{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:24mm;padding:5px 9px;border-radius:13px;color:#4a2b00;
+  background:linear-gradient(140deg,#fef3c7,#fcd34d 55%,#f59e0b);
+  border:1.5px solid rgba(255,255,255,.6);box-shadow:0 5px 14px rgba(120,70,0,.3);}
+.medal .ml{font-size:8.5px;font-weight:800;}
+.medal .mv{font-family:var(--num);font-size:25px;font-weight:800;line-height:1.02;}
+.medal .mt{font-family:var(--num);font-size:7.8px;font-weight:600;opacity:.82;}
+.medal .mtie{font-size:7.4px;font-weight:800;background:rgba(74,43,0,.16);padding:1px 6px;border-radius:999px;margin-top:2px;}
+.medal.absent{background:linear-gradient(140deg,#f1f5f9,#cbd5e1);color:#334155;box-shadow:none;}
+.medal.absent .mv{font-size:19px;}
 
 /* score band: gauge + stats */
 .score{display:grid;grid-template-columns:auto 1fr;gap:11px;margin-top:8px;align-items:center;
@@ -130,16 +169,20 @@ const CSS = `
 .scC .ct{font-size:8.4px;font-weight:700;}
 .scC p{margin:0;font-size:var(--sc-font);line-height:1.4;color:#5b6678;}
 
-.ft{margin-top:auto;padding-top:5px;display:flex;justify-content:space-between;align-items:center;
+.ft{margin-top:auto;padding-top:5px;display:flex;justify-content:space-between;align-items:center;gap:10px;
   border-top:1px dashed var(--line);font-family:var(--num);font-size:8.5px;color:#9aa3b5;}
-.ft .pill{background:#101728;color:#fff;padding:2px 9px;border-radius:999px;font-weight:700;}
+.ft .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ft .pill{background:#101728;color:#fff;padding:2px 9px;border-radius:999px;font-weight:700;flex:none;}
 
 /* ===== BACK ===== */
-.bh{display:flex;justify-content:space-between;align-items:center;padding:5mm 7mm;border-radius:14px;color:#fff;
+.bh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5mm 7mm;border-radius:14px;color:#fff;
   background:linear-gradient(120deg,#0f766e,#0891b2 55%,#1d4ed8);box-shadow:0 8px 22px rgba(13,148,136,.28);}
-.bh h1{font-family:var(--display);font-size:18px;margin:0;}
-.bh .r{text-align:right;font-family:var(--num);}
-.bh .r b{font-size:17px;display:block;}
+.bh .l{min-width:0;}
+.bh h1{font-family:var(--display);font-size:17px;margin:0;}
+.bh .who{font-size:11.5px;opacity:.92;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:98mm;}
+.bh .who b{font-family:var(--num);font-weight:700;}
+.bh .r{text-align:right;font-family:var(--num);flex:none;}
+.bh .r b{font-size:16px;display:block;line-height:1.1;}
 .bh .r span{font-size:9.5px;opacity:.88;}
 
 .dRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
@@ -166,12 +209,17 @@ const CSS = `
 .cm.wr{background:linear-gradient(120deg,#ecfeff,#eef2ff);border-left-color:#06b6d4;}
 .cm.wr h3{color:#0e7490;}
 
+/* says plainly what the rank covers, so it isn't read as more than it is */
+.mnote{margin-top:7px;border:1px dashed #cbd2df;border-radius:11px;padding:6px 11px;
+  background:#f8fafc;font-size:8.6px;line-height:1.5;color:#7a8499;}
+.mnote b{color:#3b4559;}
+
 /* ---------- PRINT ---------- */
 @media print{
   @page{size:A4;margin:0;}
   html,body{background:#fff !important;margin:0 !important;}
   #root{border:0 !important;width:auto !important;max-width:none !important;text-align:left !important;}
-  .srp-bar,.srp-tip,.srp-empty{display:none !important;}
+  .srp-bar,.srp-tip,.srp-warn,.srp-empty{display:none !important;}
   .srp-stage{background:#fff;padding:0;gap:0;}
   .srp-stage .srp-page{box-shadow:none;border-radius:0;}
   .srp-page{break-after:page;page-break-after:always;}
@@ -192,14 +240,60 @@ function band(p){
 function grade(p){const v=Number(p)||0;
   if(v>=90)return"A+";if(v>=80)return"A";if(v>=70)return"A-";if(v>=60)return"B";if(v>=50)return"C";if(v>=40)return"D";return"F";}
 
+/* ======================== identity / merit helpers ====================== */
+
+/**
+ * The backend puts name and merit on the student AND inside analysis.
+ * Read both so the card works with either shape, and with older responses
+ * that carry neither.
+ */
+function identityOf(student){
+  const a = student?.analysis || {};
+  const name = String(student?.name ?? a.name ?? "").trim();
+  const roll = String(student?.roll ?? a.roll ?? "").trim();
+  const merit = student?.merit ?? a.merit ?? null;
+  return {
+    name, roll, merit,
+    meritTotal: Number(a.meritTotal) || 0,
+    meritTied: Boolean(a.meritTied),
+    hasName: name.length > 0,
+    hasMerit: merit !== null && merit !== undefined,
+  };
+}
+
+/* Never invent a name. A blank Name column is stated, so staff can fix the
+   sheet before printing three hundred cards. */
+const shownName = (id) => (id.hasName ? id.name : "নাম দেওয়া নেই");
+const whoLine = (id) => (id.hasName ? `${id.name} · Roll ${id.roll}` : `Roll ${id.roll}`);
+
+function Medal({id}){
+  if(!id.hasMerit){
+    return(
+      <div className="medal absent">
+        <span className="ml">মেধাক্রম</span>
+        <span className="mv">—</span>
+        <span className="mt">অনুপস্থিত</span>
+      </div>
+    );
+  }
+  return(
+    <div className="medal">
+      <span className="ml">মেধাক্রম</span>
+      <span className="mv">{id.merit}</span>
+      {/* {id.meritTotal>0 && <span className="mt">{id.meritTotal} জনের মধ্যে</span>} */}
+      {id.meritTied && <span className="mtie">যুগ্মভাবে</span>}
+    </div>
+  );
+}
+
 function writtenComment(p){
   const v=Number(p)||0;
-  if(v>=90)return{c:"লিখিত অংশে প্রস্তুতি Perfect",t:"লিখিত অংশে তোমার প্রস্তুতি ভালো। উত্তর গুছিয়ে লেখা, দরকারি পয়েন্টগুলো ধরতে পারা আর পরীক্ষার উপস্থাপনা—এই মানটা ধরে রাখতে পারলে লিখিত অংশে নিয়মিত ভালো করবে।"};
-  if(v>=80)return{c:"লিখিত অংশে ভালো করেছো",t:"লিখিত অংশে তুমি ভালো করছ। আর একটু খেয়াল দাও, গুরুত্বপূর্ণ পয়েন্টে জোর দাও—তাহলে এই অংশের নম্বর আরও বাড়বে।"};
-  if(v>=65)return{c:"লিখিত অংশ মোটামুটি ভালো",t:" লিখিত অংশে প্রস্তুতি মোটামুটি ঠিকঠাক আছে। গুরুত্বপূর্ণ প্রশ্নগুলো নিজে হাতে লিখে অনুশীলন করো আর উত্তর গুছিয়ে উপস্থাপন করার চর্চা রাখো—প্রস্তুতি আরও ভালো হবে।"};
-  if(v>=50)return{c:"লিখিত অংশে আরও মন দিতে হবে",t:"লিখিত অংশে আরও মনোযোগ দরকার। শুধু পড়লেই হবে না-নিয়মিত হাতে লিখে অনুশীলন করো, উত্তরের কাঠামো ঠিক রাখো আর সময় ধরে লেখার অভ্যাস করো। তবেই এই অংশ থেকে ভালো নম্বর আসবে।"};
-  if(v>=30)return{c:"লিখিত অংশটা একটু দুর্বল",t:"লিখিত অংশে নম্বর তুলনামূলক কম এসেছে। প্রতিদিন একটা নির্দিষ্ট সময় লেখার অনুশীলন করো, গুরুত্বপূর্ণ প্রশ্নের উত্তর আগে থেকে তৈরি রাখো আর খাতা মেন্টরকে দেখিয়ে ভুলগুলো বুঝে নাও।"};
-  return{c:"লিখিত অংশে এখনই মন দেওয়া দরকার",t:"লিখিত অংশে নম্বর অনেকটাই কম। আজ থেকেই নিয়ম করে লেখার অভ্যাস গড়ো, একদম সহজ প্রশ্ন থেকে শুরু করো এবং প্রচুর লিখিত প্রশ্ন সমাধান করো, আর মেন্টরের সরাসরি সাহায্য নিয়ে ধাপে ধাপে এগোনো—এটা খুব জরুরি।"};
+  if(v>=90)return{c:"লিখিত অংশে প্রস্তুতি Perfect",t:"লিখিত অংশে তোমার প্রস্তুতি ভালো। উত্তর গুছিয়ে লেখা, দরকারি পয়েন্টগুলো ধরতে পারা আর পরীক্ষার উপস্থাপনা—এই মানটা ধরে রাখতে পারলে লিখিত অংশে নিয়মিত ভালো করবে।"};
+  if(v>=80)return{c:"লিখিত অংশে ভালো করেছো",t:"লিখিত অংশে তুমি ভালো করছ। আর একটু খেয়াল দাও, গুরুত্বপূর্ণ পয়েন্টে জোর দাও—তাহলে এই অংশের নম্বর আরও বাড়বে।"};
+  if(v>=65)return{c:"লিখিত অংশ মোটামুটি ভালো",t:" লিখিত অংশে প্রস্তুতি মোটামুটি ঠিকঠাক আছে। গুরুত্বপূর্ণ প্রশ্নগুলো নিজে হাতে লিখে অনুশীলন করো আর উত্তর গুছিয়ে উপস্থাপন করার চর্চা রাখো—প্রস্তুতি আরও ভালো হবে।"};
+  if(v>=50)return{c:"লিখিত অংশে আরও মন দিতে হবে",t:"লিখিত অংশে আরও মনোযোগ দরকার। শুধু পড়লেই হবে না-নিয়মিত হাতে লিখে অনুশীলন করো, উত্তরের কাঠামো ঠিক রাখো আর সময় ধরে লেখার অভ্যাস করো। তবেই এই অংশ থেকে ভালো নম্বর আসবে।"};
+  if(v>=30)return{c:"লিখিত অংশটা একটু দুর্বল",t:"লিখিত অংশে নম্বর তুলনামূলক কম এসেছে। প্রতিদিন একটা নির্দিষ্ট সময় লেখার অনুশীলন করো, গুরুত্বপূর্ণ প্রশ্নের উত্তর আগে থেকে তৈরি রাখো আর খাতা মেন্টরকে দেখিয়ে ভুলগুলো বুঝে নাও।"};
+  return{c:"লিখিত অংশে এখনই মন দেওয়া দরকার",t:"লিখিত অংশে নম্বর অনেকটাই কম। আজ থেকেই নিয়ম করে লেখার অভ্যাস গড়ো, একদম সহজ প্রশ্ন থেকে শুরু করো এবং প্রচুর লিখিত প্রশ্ন সমাধান করো, আর মেন্টরের সরাসরি সাহায্য নিয়ে ধাপে ধাপে এগোনো—এটা খুব জরুরি।"};
 }
 
 /* ============================ SVG charts ================================ */
@@ -316,6 +410,7 @@ function BarChart({bars}){
 /* =============================== PAGES ================================== */
 function Front({student}){
   const a=student.analysis||{};
+  const id=identityOf(student);
   const sb=a.subjectConsistency?.subjectBars||[];
   const bars=sb.map(s=>({subject:s.subject,pct:s.totalPercentage||s.percentage||0})).sort((x,y)=>y.pct-x.pct);
   const cmts=[...sb].sort((x,y)=>(y.totalPercentage||0)-(x.totalPercentage||0));
@@ -328,7 +423,13 @@ function Front({student}){
           <div className="seal"><img src={BRAND.logo} alt="logo"/></div>
           <div><h1>{BRAND.name}</h1><div className="ex">{BRAND.exam}</div></div>
         </div>
-        <div className="rt"><div className="rl">Roll No</div><div className="rv">{student.roll}</div></div>
+
+        <Medal id={id}/>
+
+        <div className="rt">
+          <div className={id.hasName?"snm":"snm miss"} title={shownName(id)}>{shownName(id)}</div>
+          <div className="rl">Roll <b>{id.roll||"—"}</b></div>
+        </div>
       </div>
 
       <div className="score">
@@ -358,19 +459,29 @@ function Front({student}){
           </div>);})}
       </div>
 
-      <div className="ft"><span>{BRAND.name} · {BRAND.motto}</span><span className="pill">Roll {student.roll} · Page 1/2</span></div>
+      <div className="ft">
+        <span className="who">{BRAND.name} · {BRAND.motto}</span>
+        <span className="pill">{whoLine(id)} · Page 1/2</span>
+      </div>
     </div>
   );
 }
 
 function Back({student}){
   const a=student.analysis||{}, p=a.partitions||{}, w=writtenComment(a.writtenPercentage||0);
+  const id=identityOf(student);
   return(
     <div className="srp-page" style={{"--rb":"linear-gradient(180deg,#0d9488,#2563eb)"}}>
       <div className="flourish"/>
       <div className="bh">
-        <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
-        <div className="r"><b>Roll {student.roll}</b><span>মোট {a.totalPercentage||0}% · লিখিত {a.writtenPercentage||0}%</span></div>
+        <div className="l">
+          <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
+          <div className="who">{shownName(id)} · Roll <b>{id.roll||"—"}</b></div>
+        </div>
+        <div className="r">
+          <b>{id.hasMerit?`মেধাক্রম ${id.merit}`:"মেধাক্রম —"}</b>
+          <span>মোট {a.totalPercentage||0}% · লিখিত {a.writtenPercentage||0}%</span>
+        </div>
       </div>
 
       <div className="sec" style={{"--ac":"#0d9488"}}><span className="tg">MCQ MIX</span><b>MCQ গঠন বিশ্লেষণ (সঠিক / ভুল / স্কিপ)</b><span className="ru"/></div>
@@ -402,7 +513,22 @@ function Back({student}){
         <p>{w.t}</p>
       </div>
 
-      <div className="ft"><span>{BRAND.name} · {BRAND.motto}</span><span className="pill">Roll {student.roll} · Page 2/2</span></div>
+      <div className="mnote">
+        {id.hasMerit ? (
+          <>
+            <b>মেধাক্রম {id.merit}</b>
+            {id.meritTotal>0 && ` — এই পরীক্ষায় অংশগ্রহণকারী ${id.meritTotal} জন শিক্ষার্থীর মধ্যে`}
+            {id.meritTied && " (একই নম্বর পাওয়ায় যুগ্মভাবে)"}। মেধাক্রম মোট প্রাপ্ত শতাংশের ভিত্তিতে নির্ধারিত।
+          </>
+        ) : (
+          <><b>মেধাক্রম:</b> এই পরীক্ষায় কোনো অংশে অংশগ্রহণ না থাকায় মেধাক্রম নির্ধারণ করা হয়নি।</>
+        )}
+      </div>
+
+      <div className="ft">
+        <span className="who">{BRAND.name} · {BRAND.motto}</span>
+        <span className="pill">{whoLine(id)} · Page 2/2</span>
+      </div>
     </div>
   );
 }
@@ -426,6 +552,22 @@ export default function App(){
     finally{setLoading(false);}
   };
 
+  const ordered = useMemo(()=>{
+    if(PRINT_ORDER!=="merit") return students;
+    return [...students].sort((x,y)=>{
+      const mx=x?.merit??x?.analysis?.merit??null, my=y?.merit??y?.analysis?.merit??null;
+      if(mx===null&&my===null) return 0;
+      if(mx===null) return 1;          // unranked last, never "worst"
+      if(my===null) return -1;
+      return mx-my;
+    });
+  },[students]);
+
+  // If the backend hasn't been redeployed, every card will be missing its
+  // name and rank. Say so on screen rather than letting it reach the printer.
+  const missingIdentity = students.length>0 &&
+    students.every(s=>!identityOf(s).hasName && !identityOf(s).hasMerit);
+
   return(
     <div className="srp-root">
       <style>{CSS}</style>
@@ -440,13 +582,19 @@ export default function App(){
           {students.length>0 && <button className="srp-btn print" onClick={()=>window.print()}>🖨 Print All ({students.length})</button>}
         </div>
         <div className="srp-tip">Print → A4 · Margins: None · ✓ Background graphics · each student = 2 pages (front + back)</div>
+        {missingIdentity && (
+          <div className="srp-warn">
+            No names or merit ranks came back from the server. Redeploy the backend,
+            and make sure the uploaded sheet has a <b>Name</b> column.
+          </div>
+        )}
       </div>
 
       {students.length===0 ? (
         <div className="srp-empty"><div className="big">📄</div><div>Upload an Excel file to generate report cards.</div></div>
       ):(
         <div className="srp-stage">
-          {students.map(s=>(
+          {ordered.map(s=>(
             <React.Fragment key={s.id??s.roll}>
               <Front student={s}/>
               <Back student={s}/>
@@ -517,11 +665,33 @@ function consistency(s){const sbs=bars(s),v=sbs.filter(i=>i.totalMarks>0);
 function analyze(s){const pd=agg(s),sa=part("Science",byNames(s,SCI)),na=part("General",byNames(s,NSCI));
   return{...pd,...initCmt(pd),subjectConsistency:consistency(s),
     partitions:{science:sa,nonScience:na,comparison:sciCmp(sa,na)}};}
+
+/* demo-only merit: competition ranking on total percentage (1, 2, 2, 4) */
+function demoMerit(list){
+  const ranked=[...list].sort((a,b)=>(b.analysis.totalPercentage||0)-(a.analysis.totalPercentage||0));
+  let lastPct=null,lastMerit=0;
+  ranked.forEach((s,i)=>{
+    const pct=s.analysis.totalPercentage||0;
+    const merit=pct===lastPct?lastMerit:i+1;
+    lastPct=pct;lastMerit=merit;
+    s.merit=merit;s.analysis.merit=merit;
+    s.analysis.meritTotal=ranked.length;s.analysis.meritTied=false;
+  });
+  ranked.forEach((s,i)=>{
+    const p=ranked[i-1],n=ranked[i+1];
+    if((p&&p.merit===s.merit)||(n&&n.merit===s.merit)) s.analysis.meritTied=true;
+  });
+  return list;
+}
+
 const mk=(c,ic,sk,w)=>({correct:c,incorrect:ic,skipped:sk,mcqTotal:25,written:w,writtenTotal:50});
 const NAMES=["Physics 1st","Physics 2nd","Chemistry 1st","Chemistry 2nd","Higher Math 1st","Higher Math 2nd","Biology 1st","Biology 2nd","Bangla 1st","Bangla 2nd","English 1st","English 2nd","ICT"];
 const RAW={
-  "101":[[22,2,1,42],[20,3,2,40],[23,1,1,45],[21,2,2,43],[19,4,2,38],[18,5,2,36],[24,1,0,46],[22,2,1,44],[20,3,2,41],[21,2,2,40],[17,5,3,35],[16,6,3,33],[23,1,1,44]],
-  "214":[[13,7,5,24],[11,8,6,22],[15,6,4,28],[12,8,5,25],[9,9,7,18],[8,10,7,16],[16,5,4,30],[14,6,5,27],[17,5,3,31],[16,5,4,30],[12,8,5,23],[11,9,5,21],[18,4,3,33]],
-  "356":[[6,10,9,12],[5,11,9,10],[8,9,8,15],[6,10,9,13],[4,12,9,8],[3,13,9,7],[10,8,7,18],[9,8,8,17],[12,7,6,22],[11,7,7,20],[7,10,8,14],[6,11,8,12],[13,6,6,24]],
+  "101":{name:"সাদিয়া ইসলাম",rows:[[22,2,1,42],[20,3,2,40],[23,1,1,45],[21,2,2,43],[19,4,2,38],[18,5,2,36],[24,1,0,46],[22,2,1,44],[20,3,2,41],[21,2,2,40],[17,5,3,35],[16,6,3,33],[23,1,1,44]]},
+  "214":{name:"মোঃ রাকিবুল হাসান",rows:[[13,7,5,24],[11,8,6,22],[15,6,4,28],[12,8,5,25],[9,9,7,18],[8,10,7,16],[16,5,4,30],[14,6,5,27],[17,5,3,31],[16,5,4,30],[12,8,5,23],[11,9,5,21],[18,4,3,33]]},
+  "356":{name:"",rows:[[6,10,9,12],[5,11,9,10],[8,9,8,15],[6,10,9,13],[4,12,9,8],[3,13,9,7],[10,8,7,18],[9,8,8,17],[12,7,6,22],[11,7,7,20],[7,10,8,14],[6,11,8,12],[13,6,6,24]]},
 };
-const SAMPLE_STUDENTS=Object.entries(RAW).map(([roll,rows],idx)=>{const subjects={};NAMES.forEach((n,i)=>{const[c,ic,sk,w]=rows[i];subjects[n]=mk(c,ic,sk,w);});return{id:idx+1,roll,subjects,analysis:analyze(subjects)};});
+const SAMPLE_STUDENTS=demoMerit(Object.entries(RAW).map(([roll,{name,rows}],idx)=>{
+  const subjects={};NAMES.forEach((n,i)=>{const[c,ic,sk,w]=rows[i];subjects[n]=mk(c,ic,sk,w);});
+  return{id:idx+1,roll,name,subjects,analysis:analyze(subjects)};
+}));

@@ -88,6 +88,58 @@ function getSubjectLevelClass(percentage) {
   return "subjectLevel critical";
 }
 
+/**
+ * Name and merit arrive both on the student and inside analysis
+ * (the backend sets them in both places), so read either shape.
+ */
+function readIdentity(student) {
+  const analysis = student?.analysis || {};
+
+  const name = String(student?.name ?? analysis.name ?? "").trim();
+  const roll = String(student?.roll ?? analysis.roll ?? "").trim();
+
+  const merit = student?.merit ?? analysis.merit ?? null;
+  const meritTotal = Number(analysis.meritTotal) || 0;
+  const meritTied = Boolean(analysis.meritTied);
+
+  return {
+    name,
+    roll,
+    merit,
+    meritTotal,
+    meritTied,
+    hasName: name.length > 0,
+    hasMerit: merit !== null && merit !== undefined,
+  };
+}
+
+/**
+ * A missing name is stated, never invented or silently blanked — staff need to
+ * see that the Name column was empty for this row so they can fix the sheet.
+ */
+function MeritBadge({ identity }) {
+  if (!identity.hasMerit) {
+    return (
+      <span className="meritBadge absent">
+        <span className="meritLabel">মেধাক্রম</span>
+        <span className="meritValue">—</span>
+        <span className="meritScope">অনুপস্থিত</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="meritBadge">
+      <span className="meritLabel">মেধাক্রম</span>
+      <span className="meritValue">{identity.merit}</span>
+      <span className="meritScope">
+        {identity.meritTotal > 0 ? `${identity.meritTotal} জনের মধ্যে` : "এই পরীক্ষায়"}
+        {identity.meritTied ? " · যুগ্মভাবে" : ""}
+      </span>
+    </span>
+  );
+}
+
 function SubjectBarChart({ data }) {
   const bars = [...(data?.subjectBars || [])].sort(
     (a, b) => (b.totalPercentage || b.percentage || 0) - (a.totalPercentage || a.percentage || 0)
@@ -138,8 +190,8 @@ function SubjectCommentList({ data }) {
     return (
       <div className="subjectCommentList">
         <div className="subjectCommentItem">
-          <h3>বিষয়ভিত্তিক মন্তব্য পাওয়া যায়নি</h3>
-          <p>এই শিক্ষার্থীর জন্য বিষয়ভিত্তিক বিশ্লেষণের ডেটা পাওয়া যায়নি।</p>
+          <h3>বিষয়ভিত্তিক মন্তব্য পাওয়া যায়নি</h3>
+          <p>এই শিক্ষার্থীর জন্য বিষয়ভিত্তিক বিশ্লেষণের ডেটা পাওয়া যায়নি।</p>
         </div>
       </div>
     );
@@ -150,7 +202,7 @@ function SubjectCommentList({ data }) {
       <div className="subjectCommentListHeader">
         <h3>Subject-wise Bangla Comments</h3>
         <p>
-          প্রতিটি বিষয়ের মোট শতাংশ অনুযায়ী সহজ ভাষায় অভিভাবক-বান্ধব মন্তব্য।
+          প্রতিটি বিষয়ের মোট শতাংশ অনুযায়ী সহজ ভাষায় অভিভাবক-বান্ধব মন্তব্য।
         </p>
       </div>
 
@@ -206,8 +258,8 @@ function SubjectCommentList({ data }) {
             </div>
 
             <div className="subjectWiseComment">
-              <h4>{item.subjectCommentCategory || "বিষয়ভিত্তিক মন্তব্য"}</h4>
-              <p>{item.subjectComment || "মন্তব্য পাওয়া যায়নি।"}</p>
+              <h4>{item.subjectCommentCategory || "বিষয়ভিত্তিক মন্তব্য"}</h4>
+              <p>{item.subjectComment || "মন্তব্য পাওয়া যায়নি।"}</p>
             </div>
           </div>
         );
@@ -244,19 +296,19 @@ function AnalysisPair({
         <CommentBlock
           label={`Comment for ${leftTitle} chart`}
           title={leftData?.category || `${leftTitle} বিশ্লেষণ`}
-          comment={leftData?.comment || "মন্তব্য পাওয়া যায়নি।"}
+          comment={leftData?.comment || "মন্তব্য পাওয়া যায়নি।"}
         />
 
         <CommentBlock
           label={`Comment for ${rightTitle} chart`}
           title={rightData?.category || `${rightTitle} বিশ্লেষণ`}
-          comment={rightData?.comment || "মন্তব্য পাওয়া যায়নি।"}
+          comment={rightData?.comment || "মন্তব্য পাওয়া যায়নি।"}
         />
 
         <CommentBlock
           label={`Comparison comment for ${leftTitle} and ${rightTitle}`}
           title={comparison?.category || "তুলনামূলক বিশ্লেষণ"}
-          comment={comparison?.comment || "তুলনামূলক মন্তব্য পাওয়া যায়নি।"}
+          comment={comparison?.comment || "তুলনামূলক মন্তব্য পাওয়া যায়নি।"}
           deviation={comparison?.deviation || 0}
         />
       </div>
@@ -272,16 +324,36 @@ function StudentDetailsModal({ student, onClose }) {
   const mathPartitions = analysis.mathPartitions || {};
   const subjectConsistency = analysis.subjectConsistency || {};
 
+  const identity = readIdentity(student);
+
+  // studentAnalysis.js does not produce mathPartitions. Rendering the section
+  // anyway fills the screen with 0% pies and "মন্তব্য পাওয়া যায়নি।", which
+  // looks like a broken report to anyone reading over a staff member's
+  // shoulder. Show it only when the data is actually there.
+  const hasMathPartitions = Boolean(
+    mathPartitions.mathematical || mathPartitions.nonMathematical
+  );
+
   return (
     <div className="modalOverlay">
       <div className="modalContainer cleanModal">
-        <button className="closeBtn" onClick={onClose}>
+        <button className="closeBtn" onClick={onClose} aria-label="Close">
           ✕
         </button>
 
         <div className="detailsHero">
-          <h1>Student Performance Analysis</h1>
-          <h2>Roll: {student.roll}</h2>
+          <div className="detailsEyebrow">Student Performance Analysis</div>
+
+          <div className="identityRow">
+            <div className="identityText">
+              <h1 className={identity.hasName ? "studentName" : "studentName missing"}>
+                {identity.hasName ? identity.name : "নাম দেওয়া নেই"}
+              </h1>
+              <h2>Roll {identity.roll || "—"}</h2>
+            </div>
+
+            <MeritBadge identity={identity} />
+          </div>
 
           <div className="heroStats">
             <div>
@@ -320,7 +392,7 @@ function StudentDetailsModal({ student, onClose }) {
             <CommentBlock
               label="Comment for Overall Performance"
               title={analysis.category || "সামগ্রিক বিশ্লেষণ"}
-              comment={analysis.comment || "মন্তব্য পাওয়া যায়নি।"}
+              comment={analysis.comment || "মন্তব্য পাওয়া যায়নি।"}
             />
           </div>
         </section>
@@ -341,11 +413,11 @@ function StudentDetailsModal({ student, onClose }) {
               label="Comment for Subject-wise Bar Chart"
               title={
                 subjectConsistency?.level ||
-                "বিষয়ভিত্তিক ধারাবাহিকতা বিশ্লেষণ"
+                "বিষয়ভিত্তিক ধারাবাহিকতা বিশ্লেষণ"
               }
               comment={
                 subjectConsistency?.comment ||
-                "বিষয়ভিত্তিক মন্তব্য পাওয়া যায়নি।"
+                "বিষয়ভিত্তিক মন্তব্য পাওয়া যায়নি।"
               }
             />
           </div>
@@ -365,17 +437,19 @@ function StudentDetailsModal({ student, onClose }) {
           comparison={partitions.comparison}
         />
 
-        <AnalysisPair
-          title="Mathematical vs Non-Mathematical Analysis"
-          description="Comparison between calculation-based and theory-based subjects using total result percentage."
-          leftTitle="Mathematical"
-          leftSubtitle="Math, Physics, Chemistry"
-          leftData={mathPartitions.mathematical}
-          rightTitle="Non-Mathematical"
-          rightSubtitle="Bangla, English, Religion, ICT, Biology, BGS"
-          rightData={mathPartitions.nonMathematical}
-          comparison={mathPartitions.comparison}
-        />
+        {hasMathPartitions && (
+          <AnalysisPair
+            title="Mathematical vs Non-Mathematical Analysis"
+            description="Comparison between calculation-based and theory-based subjects using total result percentage."
+            leftTitle="Mathematical"
+            leftSubtitle="Math, Physics, Chemistry"
+            leftData={mathPartitions.mathematical}
+            rightTitle="Non-Mathematical"
+            rightSubtitle="Bangla, English, Religion, ICT, Biology, BGS"
+            rightData={mathPartitions.nonMathematical}
+            comparison={mathPartitions.comparison}
+          />
+        )}
       </div>
     </div>
   );
