@@ -28,8 +28,8 @@
 
 import React, { useState, useMemo } from "react";
 
-// const API_URL = "https://report-9coj.onrender.com/api/upload-result";
-const API_URL = "http://localhost:5000/api/upload-result";
+const API_URL = "https://report-9coj.onrender.com/api/upload-result";
+// const API_URL = "http://localhost:5000/api/upload-result";
 const PREVIEW = true;
 const PRINT_ORDER = "sheet"; // "sheet" | "merit"
 
