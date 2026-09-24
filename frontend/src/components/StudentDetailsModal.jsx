@@ -89,6 +89,45 @@ function getSubjectLevelClass(percentage) {
 }
 
 /**
+ * MCQ, written and total marks for one subject, each as obtained / full.
+ * Same rule the analysis uses for the percentages:
+ *   MCQ     = correct / MCQ total (or attempted, if MCQ total is blank)
+ *   written = written / written total
+ *   total   = (correct + written) / (MCQ full + written total)
+ * A part whose full mark is 0 is left out, so nothing shows "0/0".
+ */
+function getSubjectMarks(item) {
+  const num = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const round2 = (v) => Number(num(v).toFixed(2)); // written marks can be fractional
+  const has = (v) => v !== undefined && v !== null && v !== "";
+
+  const mcqFull =
+    num(item?.mcqTotal) > 0
+      ? num(item?.mcqTotal)
+      : num(item?.correct) + num(item?.incorrect) + num(item?.skipped);
+  const mcqObtained = num(item?.correct);
+  const writtenFull = num(item?.writtenTotal);
+  const writtenObtained = num(item?.written);
+  const totalObtained = has(item?.totalObtained)
+    ? num(item.totalObtained)
+    : mcqObtained + writtenObtained;
+  const totalFull = has(item?.totalMarks) ? num(item.totalMarks) : mcqFull + writtenFull;
+
+  return [
+    mcqFull > 0 && { label: "MCQ", obtained: round2(mcqObtained), full: round2(mcqFull) },
+    writtenFull > 0 && {
+      label: "Written",
+      obtained: round2(writtenObtained),
+      full: round2(writtenFull),
+    },
+    totalFull > 0 && { label: "Total", obtained: round2(totalObtained), full: round2(totalFull) },
+  ].filter(Boolean);
+}
+
+/**
  * Name and merit arrive both on the student and inside analysis
  * (the backend sets them in both places), so read either shape.
  */
@@ -208,6 +247,7 @@ function SubjectCommentList({ data }) {
 
       {subjects.map((item) => {
         const totalPercentage = item.totalPercentage || item.percentage || 0;
+        const marks = getSubjectMarks(item);
 
         return (
           <div className="subjectCommentItem" key={item.subject}>
@@ -215,8 +255,12 @@ function SubjectCommentList({ data }) {
               <div>
                 <h3>{item.subject}</h3>
                 <p>
-                  MCQ: {item.mcqPercentage || 0}% | Written:{" "}
-                  {item.writtenPercentage || 0}% | Total: {totalPercentage}%
+                  {marks.map((part, i) => (
+                    <span key={part.label}>
+                      {i > 0 && " | "}
+                      {part.label}: <b>{part.obtained}/{part.full}</b>
+                    </span>
+                  ))}
                 </p>
               </div>
 
