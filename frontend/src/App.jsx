@@ -22,6 +22,12 @@
    Ranking them last would state something false about a child on a document
    that goes home.
 
+   PER-SUBJECT MARKS
+   -----------------
+   Under each subject name the card prints marks, not percentages:
+   "MCQ 22/25 · লিখিত 42/50 · মোট 64/75". The total percentage stays in the
+   badge beside the subject name.
+
    PRINT: dialog -> A4 · Margins: None · turn ON "Background graphics".
    Each student = 2 pages (front + back), duplex-ready.
 ============================================================================= */
@@ -166,6 +172,7 @@ const CSS = `
 .scC h4{margin:0;font-size:10.5px;font-weight:700;}
 .scC .bd{font-family:var(--num);font-weight:800;font-size:9px;padding:2px 6px;border-radius:999px;}
 .scC .mn{font-family:var(--num);font-size:7.2px;color:#7a8499;}
+.scC .mn b{font-weight:700;color:#3b4559;}
 .scC .ct{font-size:8.4px;font-weight:700;}
 .scC p{margin:0;font-size:var(--sc-font);line-height:1.4;color:#5b6678;}
 
@@ -239,6 +246,37 @@ function band(p){
 }
 function grade(p){const v=Number(p)||0;
   if(v>=90)return"A+";if(v>=80)return"A";if(v>=70)return"A-";if(v>=60)return"B";if(v>=50)return"C";if(v>=40)return"D";return"F";}
+
+/* ========================= per-subject marks ============================ */
+
+/**
+ * MCQ, written and total marks for one subject, each as obtained / full.
+ * Same rule the analysis uses for the percentages:
+ *   MCQ     = correct / MCQ total (or attempted, if MCQ total is blank)
+ *   written = written / written total
+ *   total   = (correct + written) / (MCQ full + written total)
+ * totalObtained / totalMarks from the analysis are used when present.
+ * A part whose full mark is 0 (e.g. a subject with no written paper) is
+ * left out, so the card never prints "0/0".
+ */
+function subjectMarks(s){
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0;};
+  const r2=v=>Number(n(v).toFixed(2));      // written marks can be fractional
+  const has=v=>v!==undefined&&v!==null&&v!=="";
+
+  const mcqFull=n(s?.mcqTotal)>0?n(s?.mcqTotal):n(s?.correct)+n(s?.incorrect)+n(s?.skipped);
+  const mcqOb=n(s?.correct);
+  const wrFull=n(s?.writtenTotal);
+  const wrOb=n(s?.written);
+  const totOb=has(s?.totalObtained)?n(s.totalObtained):mcqOb+wrOb;
+  const totFull=has(s?.totalMarks)?n(s.totalMarks):mcqFull+wrFull;
+
+  return{
+    mcq:  mcqFull>0 ? {ob:r2(mcqOb),full:r2(mcqFull)} : null,
+    wr:   wrFull>0  ? {ob:r2(wrOb), full:r2(wrFull)}  : null,
+    total:totFull>0 ? {ob:r2(totOb),full:r2(totFull)} : null,
+  };
+}
 
 /* ======================== identity / merit helpers ====================== */
 
@@ -450,10 +488,22 @@ function Front({student}){
 
       <div className="sec" style={{"--ac":"#0ea5e9"}}><span className="tg">COMMENTS</span><b>বিষয়ভিত্তিক মন্তব্য</b><span className="ru"/></div>
       <div className="scGrid">
-        {cmts.map(s=>{const pct=s.totalPercentage||s.percentage||0,c=band(pct);return(
+        {cmts.map(s=>{const pct=s.totalPercentage||s.percentage||0,c=band(pct),m=subjectMarks(s);
+          const parts=[
+            m.mcq   && ["MCQ",  m.mcq],
+            m.wr    && ["লিখিত",m.wr],
+            m.total && ["মোট",  m.total],
+          ].filter(Boolean);
+          return(
           <div className="scC" key={s.subject} style={{borderLeftColor:c.bar}}>
             <div className="t"><h4>{s.subject}</h4><span className="bd" style={{background:c.bg,color:c.tx}}>{pct}%</span></div>
-            <div className="mn">MCQ {s.mcqPercentage||0}% · লিখিত {s.writtenPercentage||0}% · মোট {pct}%</div>
+            <div className="mn">
+              {parts.map(([label,v],i)=>(
+                <React.Fragment key={label}>
+                  {i>0 && " · "}{label} <b>{v.ob}/{v.full}</b>
+                </React.Fragment>
+              ))}
+            </div>
             <div className="ct" style={{color:c.tx}}>{s.subjectCommentCategory}</div>
             <p>{s.subjectComment}</p>
           </div>);})}
