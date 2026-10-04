@@ -58,10 +58,10 @@
  * It returns the same analysis objects, sorted best-first, each with `merit`.
  *
  * Ranking rules:
- *   - Primary key is totalPercentage, NOT total marks. Under the attendance
- *     model two students can have different denominators, so raw marks are
- *     not comparable but percentage is.
- *   - Ties break on totalObtained, then totalCorrect, then attendedSubjectCount.
+ *   - Primary key is totalObtained — marks out of the WHOLE exam. Parts a
+ *     student did not attend count as 0; merit is never based on a
+ *     percentage of only the attended parts.
+ *   - Ties break on totalCorrect, then attendedSubjectCount.
  *   - Standard competition ranking: 1, 2, 2, 4 (not 1, 2, 2, 3).
  *     Genuinely tied students share a rank and carry `meritTied: true`.
  *   - A student with no attended parts at all (hasData === false) gets
@@ -1457,13 +1457,14 @@ function generateStudentAnalysis(subjects, options) {
 /**
  * The values merit is decided on, in priority order, all "higher is better".
  *
- * totalPercentage leads because the attendance model gives students different
- * denominators — someone who sat 4 subjects and someone who sat 6 cannot be
- * compared on raw marks, but they can be compared on percentage.
+ * Merit is judged against the WHOLE exam, not only the parts a student sat.
+ * Every student faces the same full exam, so total marks obtained is the fair
+ * comparison — an absent part simply contributes 0. Ranking on
+ * totalPercentage (obtained / attended marks) would let someone who sat 2
+ * exams and scored 70/85 outrank someone who sat all of them and scored 303/400.
  */
 function getMeritSortValues(analysis) {
   return [
-    safeNumber(analysis?.totalPercentage),
     safeNumber(analysis?.totalObtained),
     safeNumber(analysis?.totalCorrect),
     safeNumber(analysis?.attendedSubjectCount),
