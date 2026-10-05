@@ -58,7 +58,7 @@ function PieBlock({ title, subtitle, data }) {
   );
 }
 
-function CommentBlock({ label, title, comment, deviation }) {
+function CommentBlock({ label, title, comment, badge }) {
   return (
     <div className="analysisComment">
       <div className="commentLabel">{label}</div>
@@ -66,8 +66,8 @@ function CommentBlock({ label, title, comment, deviation }) {
       <div className="commentHeader">
         <h3>{title}</h3>
 
-        {deviation !== undefined && (
-          <span className="deviationBadge">Difference: {deviation}%</span>
+        {badge !== undefined && (
+          <span className="deviationBadge">{badge}</span>
         )}
       </div>
 
@@ -86,6 +86,13 @@ function getSubjectLevelClass(percentage) {
   if (value >= 30) return "subjectLevel danger";
 
   return "subjectLevel critical";
+}
+
+/* Comment areas show marks, not percentages: "obtained/total".
+   "—" when that part has no total (the student did not sit it). */
+function fmtMarks(obtained, total) {
+  const r = (v) => Number((Number(v) || 0).toFixed(2));
+  return Number(total) > 0 ? `${r(obtained)}/${r(total)}` : "—";
 }
 
 /**
@@ -215,13 +222,13 @@ function SubjectCommentList({ data }) {
               <div>
                 <h3>{item.subject}</h3>
                 <p>
-                  MCQ: {item.mcqPercentage || 0}% | Written:{" "}
-                  {item.writtenPercentage || 0}% | Total: {totalPercentage}%
+                  MCQ: {fmtMarks(item.correct, item.mcqTotal)} | Written:{" "}
+                  {fmtMarks(item.written, item.writtenTotal)}
                 </p>
               </div>
 
               <span className={getSubjectLevelClass(totalPercentage)}>
-                {totalPercentage}%
+                {fmtMarks(item.totalObtained, item.totalMarks)}
               </span>
             </div>
 
@@ -309,7 +316,7 @@ function AnalysisPair({
           label={`Comparison comment for ${leftTitle} and ${rightTitle}`}
           title={comparison?.category || "তুলনামূলক বিশ্লেষণ"}
           comment={comparison?.comment || "তুলনামূলক মন্তব্য পাওয়া যায়নি।"}
-          deviation={comparison?.deviation || 0}
+          badge={`${leftTitle}: MCQ ${fmtMarks(leftData?.totalCorrect, leftData?.totalMcq)} · Written ${fmtMarks(leftData?.totalWritten, leftData?.totalWrittenMarks)} | ${rightTitle}: MCQ ${fmtMarks(rightData?.totalCorrect, rightData?.totalMcq)} · Written ${fmtMarks(rightData?.totalWritten, rightData?.totalWrittenMarks)}`}
         />
       </div>
     </section>
