@@ -5,6 +5,8 @@
      • API_URL      -> backend upload endpoint
      • PREVIEW      -> true shows 3 demo students; set false to start empty
      • PRINT_ORDER  -> "sheet" (Excel row order) | "merit" (best first)
+     • Mode switch  -> top bar: Subject-wise (Science/General) or
+                       Chapterwise (exam-wise MCQ front, written back)
      • bigbang.png  -> place in your public/ folder (served at /bigbang.png)
 
    NAME + MERIT
@@ -32,6 +34,16 @@ const API_URL = "https://report-9coj.onrender.com/api/upload-result";
 // const API_URL = "http://localhost:5000/api/upload-result";
 const PREVIEW = true;
 const PRINT_ORDER = "sheet"; // "sheet" | "merit"
+
+/* Report mode, picked with the switch in the top bar and remembered per browser.
+   "subject" = subject-wise course (Science vs General comparison).
+   "chapter" = chapterwise/exam-wise course: MCQ per exam on the front,
+               written per exam on the back, no Science/General. */
+const MODE_KEY = "srp-mode";
+const readMode = () => {
+  try { return localStorage.getItem(MODE_KEY) === "chapter" ? "chapter" : "subject"; }
+  catch { return "subject"; }
+};
 
 const BRAND = {
   name: "BIG BANG EXAM CARE",
@@ -214,6 +226,20 @@ const CSS = `
   background:#f8fafc;font-size:8.6px;line-height:1.5;color:#7a8499;}
 .mnote b{color:#3b4559;}
 
+/* ---------- report mode switch (screen only) ---------- */
+.srp-mode{display:flex;padding:3px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);}
+.srp-mode button{border:0;cursor:pointer;font-family:var(--num);font-weight:700;font-size:12px;
+  padding:8px 14px;border-radius:999px;color:#dfe4f7;background:transparent;}
+.srp-mode button.on{color:#1a103a;background:linear-gradient(135deg,#e9d5ff,#a5b4fc);}
+.srp-mode button:focus-visible{outline:3px solid #a5f3fc;outline-offset:2px;}
+
+/* ---------- chapterwise mode ---------- */
+.nod{border:1px dashed #cbd2df;border-radius:12px;padding:12px;text-align:center;font-size:10px;color:#7a8499;background:#f8fafc;}
+.scGrid.compact .scC p{display:none;}
+.scGrid.compact .scC{gap:1px;padding:4px 6px;}
+.scGrid.c4{grid-template-columns:repeat(4,1fr);}
+.scC h4{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+
 /* ---------- PRINT ---------- */
 @media print{
   @page{size:A4;margin:0;}
@@ -386,13 +412,16 @@ function WrittenCard({title,data}){
 }
 
 function BarChart({bars}){
+  // Gradient ids are document-global: without a per-chart prefix every chart
+  // on the print sheet would reuse the FIRST chart's bar colours.
+  const uid=React.useId().replace(/:/g,"");
   const W=1000,H=350,padL=38,padR=12,padT=22,padB=112;
   const pw=W-padL-padR, ph=H-padT-padB, n=Math.max(bars.length,1), slot=pw/n, bw=Math.min(slot*0.58,42);
   return(
     <svg className="barSvg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
       <defs>
         {bars.map((b,i)=>{const c=band(b.pct);return(
-          <linearGradient key={i} id={`g${i}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient key={i} id={`${uid}g${i}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={c.bar} stopOpacity="0.95"/>
             <stop offset="100%" stopColor={c.bar} stopOpacity="0.62"/>
           </linearGradient>);})}
@@ -405,12 +434,89 @@ function BarChart({bars}){
       {bars.map((b,i)=>{const x=padL+slot*i+slot/2, bh=(b.pct/100)*ph, y=padT+ph-bh, ly=padT+ph+13;
         return(
           <g key={b.subject+i}>
-            <rect x={x-bw/2} y={y} width={bw} height={Math.max(bh,2)} rx="5" fill={`url(#g${i})`}/>
+            <rect x={x-bw/2} y={y} width={bw} height={Math.max(bh,2)} rx="5" fill={`url(#${uid}g${i})`}/>
             <text x={x} y={y-5} textAnchor="middle" fontSize="13.5" fontWeight="700" fill="#1b2236" fontFamily="Sora">{b.pct}%</text>
             <text x={x} y={ly} transform={`rotate(-42 ${x} ${ly})`} textAnchor="end" fontSize="13" fill="#5b6678" fontFamily="Hind Siliguri">{b.subject}</text>
           </g>);})}
       <line x1={padL} y1={padT+ph} x2={W-padR} y2={padT+ph} stroke="#cbd2df" strokeWidth="1.5"/>
     </svg>
+  );
+}
+
+/* ========================== shared page parts =========================== */
+function FrontHeader({id,exam}){
+  return(
+    <div className="hd">
+      <div className="lf">
+        <div className="seal"><img src={BRAND.logo} alt="logo"/></div>
+        <div><h1>{BRAND.name}</h1><div className="ex">{exam}</div></div>
+      </div>
+
+      <Medal id={id}/>
+
+      <div className="rt">
+        <div className={id.hasName?"snm":"snm miss"} title={shownName(id)}>{shownName(id)}</div>
+        <div className="rl">Roll <b>{id.roll||"—"}</b></div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreBand({a}){
+  const b=band(a.totalPercentage||0);
+  return(
+    <div className="score">
+      <Gauge pct={a.totalPercentage||0}/>
+      <div className="scoreRt">
+        <span className="cat" style={{background:b.bg,color:b.tx}}>{a.category}</span>
+        <div className="mini">
+          <div className="m"><div className="mk">প্রাপ্ত</div><div className="mv">{a.totalObtained||0}/{a.totalMarks||0}</div></div>
+          <div className="m"><div className="mk"><span className="dk" style={{background:"#22c55e"}}/>সঠিক</div><div className="mv">{a.totalCorrect||0}</div></div>
+          <div className="m"><div className="mk"><span className="dk" style={{background:"#ef4444"}}/>ভুল</div><div className="mv">{a.totalIncorrect||0}</div></div>
+          <div className="m"><div className="mk"><span className="dk" style={{background:"#f59e0b"}}/>স্কিপ</div><div className="mv">{a.totalSkipped||0}</div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BackHeader({a,id}){
+  return(
+    <div className="bh">
+      <div className="l">
+        <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
+        <div className="who">{shownName(id)} · Roll <b>{id.roll||"—"}</b></div>
+      </div>
+      <div className="r">
+        <b>{id.hasMerit?`মেধাক্রম ${id.merit}`:"মেধাক্রম —"}</b>
+        <span>মোট {a.totalPercentage||0}% · লিখিত {a.writtenPercentage||0}%</span>
+      </div>
+    </div>
+  );
+}
+
+function MeritNote({id}){
+  return(
+    <div className="mnote">
+      {id.hasMerit ? (
+        <>
+          <b>মেধাক্রম {id.merit}</b>
+          {id.meritTotal>0 && ` — এই পরীক্ষায় অংশগ্রহণকারী ${id.meritTotal} জন শিক্ষার্থীর মধ্যে`}
+          {id.meritTied && " (একই নম্বর পাওয়ায় যুগ্মভাবে)"}। মেধাক্রম সব পরীক্ষার মোট প্রাপ্ত নম্বরের ভিত্তিতে নির্ধারিত।
+        </>
+      ) : (
+        <><b>মেধাক্রম:</b> এই পরীক্ষায় কোনো অংশে অংশগ্রহণ না থাকায় মেধাক্রম নির্ধারণ করা হয়নি।</>
+      )}
+    </div>
+  );
+}
+
+function Foot({id,page}){
+  return(
+    <div className="ft">
+      <span className="who">{BRAND.name} · {BRAND.motto}</span>
+      <span className="pill">{whoLine(id)} · Page {page}</span>
+    </div>
   );
 }
 
@@ -421,36 +527,11 @@ function Front({student}){
   const sb=a.subjectConsistency?.subjectBars||[];
   const bars=sb.map(s=>({subject:s.subject,pct:s.totalPercentage||s.percentage||0})).sort((x,y)=>y.pct-x.pct);
   const cmts=[...sb].sort((x,y)=>(y.totalPercentage||0)-(x.totalPercentage||0));
-  const b=band(a.totalPercentage||0);
   return(
     <div className="srp-page" style={{"--rb":"linear-gradient(180deg,#6d28d9,#0ea5e9)"}}>
       <div className="flourish"/>
-      <div className="hd">
-        <div className="lf">
-          <div className="seal"><img src={BRAND.logo} alt="logo"/></div>
-          <div><h1>{BRAND.name}</h1><div className="ex">{BRAND.exam}</div></div>
-        </div>
-
-        <Medal id={id}/>
-
-        <div className="rt">
-          <div className={id.hasName?"snm":"snm miss"} title={shownName(id)}>{shownName(id)}</div>
-          <div className="rl">Roll <b>{id.roll||"—"}</b></div>
-        </div>
-      </div>
-
-      <div className="score">
-        <Gauge pct={a.totalPercentage||0}/>
-        <div className="scoreRt">
-          <span className="cat" style={{background:b.bg,color:b.tx}}>{a.category}</span>
-          <div className="mini">
-            <div className="m"><div className="mk">প্রাপ্ত</div><div className="mv">{a.totalObtained||0}/{a.totalMarks||0}</div></div>
-            <div className="m"><div className="mk"><span className="dk" style={{background:"#22c55e"}}/>সঠিক</div><div className="mv">{a.totalCorrect||0}</div></div>
-            <div className="m"><div className="mk"><span className="dk" style={{background:"#ef4444"}}/>ভুল</div><div className="mv">{a.totalIncorrect||0}</div></div>
-            <div className="m"><div className="mk"><span className="dk" style={{background:"#f59e0b"}}/>স্কিপ</div><div className="mv">{a.totalSkipped||0}</div></div>
-          </div>
-        </div>
-      </div>
+      <FrontHeader id={id} exam={BRAND.exam}/>
+      <ScoreBand a={a}/>
 
       <div className="sec" style={{"--ac":"#4f46e5"}}><span className="tg">CHART</span><b>বিষয়ভিত্তিক মোট ফলাফল (%)</b><span className="ru"/></div>
       <div className="barCard"><BarChart bars={bars}/></div>
@@ -466,10 +547,7 @@ function Front({student}){
           </div>);})}
       </div>
 
-      <div className="ft">
-        <span className="who">{BRAND.name} · {BRAND.motto}</span>
-        <span className="pill">{whoLine(id)} · Page 1/2</span>
-      </div>
+      <Foot id={id} page="1/2"/>
     </div>
   );
 }
@@ -480,16 +558,7 @@ function Back({student}){
   return(
     <div className="srp-page" style={{"--rb":"linear-gradient(180deg,#0d9488,#2563eb)"}}>
       <div className="flourish"/>
-      <div className="bh">
-        <div className="l">
-          <h1>Performance Deep-Dive · বিশ্লেষণ</h1>
-          <div className="who">{shownName(id)} · Roll <b>{id.roll||"—"}</b></div>
-        </div>
-        <div className="r">
-          <b>{id.hasMerit?`মেধাক্রম ${id.merit}`:"মেধাক্রম —"}</b>
-          <span>মোট {a.totalPercentage||0}% · লিখিত {a.writtenPercentage||0}%</span>
-        </div>
-      </div>
+      <BackHeader a={a} id={id}/>
 
       <div className="sec" style={{"--ac":"#0d9488"}}><span className="tg">MCQ MIX</span><b>MCQ গঠন বিশ্লেষণ (সঠিক / ভুল / স্কিপ)</b><span className="ru"/></div>
       <div className="dRow">
@@ -520,22 +589,145 @@ function Back({student}){
         <p>{w.t}</p>
       </div>
 
-      <div className="mnote">
-        {id.hasMerit ? (
-          <>
-            <b>মেধাক্রম {id.merit}</b>
-            {id.meritTotal>0 && ` — এই পরীক্ষায় অংশগ্রহণকারী ${id.meritTotal} জন শিক্ষার্থীর মধ্যে`}
-            {id.meritTied && " (একই নম্বর পাওয়ায় যুগ্মভাবে)"}। মেধাক্রম মোট প্রাপ্ত শতাংশের ভিত্তিতে নির্ধারিত।
-          </>
-        ) : (
-          <><b>মেধাক্রম:</b> এই পরীক্ষায় কোনো অংশে অংশগ্রহণ না থাকায় মেধাক্রম নির্ধারণ করা হয়নি।</>
-        )}
-      </div>
+      <MeritNote id={id}/>
+      <Foot id={id} page="2/2"/>
+    </div>
+  );
+}
 
-      <div className="ft">
-        <span className="who">{BRAND.name} · {BRAND.motto}</span>
-        <span className="pill">{whoLine(id)} · Page 2/2</span>
+/* ======================= CHAPTERWISE MODE PAGES ========================== */
+/* For courses whose "subjects" are exams (e.g. "Chapterwise-18 (Junior
+   Britti)"), Science vs General means nothing. Front = MCQ per exam, back =
+   written per exam. Exams keep sheet order so the chart reads as progress. */
+
+const pctOf=(o,t)=>{const T=Number(t)||0;return T>0?Number((((Number(o)||0)/T)*100).toFixed(2)):0;};
+
+function examRows(a){
+  return(a.subjectConsistency?.subjectBars||[]).map(s=>{
+    const mt=Number(s.mcqTotal)||0, wt=Number(s.writtenTotal)||0;
+    return{...s,
+      mcqOn:mt>0, wrOn:wt>0,
+      mcqPct:mt>0?(s.mcqPercentage??pctOf(s.correct,mt)):null,
+      wrPct:wt>0?(s.writtenPercentage??pctOf(s.written,wt)):null};
+  });
+}
+
+/* If every exam name ends in the same "(...)", that's the course name: show it
+   once in the header and drop it from each label so the chart stays readable. */
+const TAIL=/\s*\(([^)]*)\)\s*$/;
+function courseOf(students){
+  const names=students.flatMap(s=>(s.analysis?.subjectConsistency?.subjectBars||[]).map(b=>String(b.subject||"")));
+  if(!names.length)return "";
+  const tails=names.map(n=>(n.match(TAIL)||[])[1]);
+  return tails.every(t=>t&&t===tails[0])?tails[0].trim():"";
+}
+function examLabel(name,course){
+  const s=course?String(name).replace(TAIL,"").trim():String(name);
+  return s.length>22?s.slice(0,21)+"…":s;
+}
+
+/* Cards shrink as exam count grows, so nothing gets clipped off the A4 page.
+   roomy = how many full cards (with comment text) fit on that page. */
+function density(n,roomy){
+  if(n<=roomy)return "";
+  if(n<=roomy*2)return "compact";
+  return "compact c4";
+}
+
+/* Comments come from the backend (utils/studentAnalysis.js):
+   MCQ  -> the subject-wise comments, picked by the exam's MCQ %
+   লিখিত -> the same comments lightly reworded for the written part.
+   Falls back to the subject comment when talking to an older backend. */
+const mcqCm=r=>({c:r.mcqCommentCategory??r.subjectCommentCategory,t:r.mcqComment??r.subjectComment});
+const wrCm=r=>({c:r.writtenCommentCategory??r.subjectCommentCategory,t:r.writtenComment??r.subjectComment});
+
+function ExamCard({name,pct,marks,mini,cm}){
+  const c=band(pct);
+  return(
+    <div className="scC" style={{borderLeftColor:c.bar}}>
+      <div className="t"><h4 title={name}>{name}</h4><span className="bd" style={{background:c.bg,color:c.tx}}>{marks}</span></div>
+      {mini && <div className="mn">{mini}</div>}
+      <div className="ct" style={{color:c.tx}}>{cm.c}</div>
+      <p>{cm.t}</p>
+    </div>
+  );
+}
+
+function ChapterFront({student,course}){
+  const a=student.analysis||{};
+  const id=identityOf(student);
+  const rows=examRows(a).filter(r=>r.mcqOn);
+  const bars=rows.map(r=>({subject:examLabel(r.subject,course),pct:r.mcqPct}));
+  return(
+    <div className="srp-page" style={{"--rb":"linear-gradient(180deg,#6d28d9,#0ea5e9)"}}>
+      <div className="flourish"/>
+      <FrontHeader id={id} exam={course||BRAND.exam}/>
+      <ScoreBand a={a}/>
+
+      <div className="sec" style={{"--ac":"#4f46e5"}}><span className="tg">MCQ</span><b>পরীক্ষাভিত্তিক MCQ ফলাফল (%)</b><span className="ru"/></div>
+      {rows.length>0
+        ? <div className="barCard"><BarChart bars={bars}/></div>
+        : <div className="nod">এই শিক্ষার্থীর কোনো MCQ পরীক্ষার ফল পাওয়া যায়নি।</div>}
+
+      {rows.length>0 && <>
+        <div className="sec" style={{"--ac":"#0ea5e9"}}><span className="tg">COMMENTS</span><b>পরীক্ষাভিত্তিক MCQ মন্তব্য</b><span className="ru"/></div>
+        <div className={`scGrid ${density(rows.length,12)}`}>
+          {rows.map((r,i)=>(
+            <ExamCard key={r.subject+i} name={examLabel(r.subject,course)} pct={r.mcqPct}
+              marks={fmtMarks(r.correct,r.mcqTotal)}
+              mini={`সঠিক ${r.correct||0} · ভুল ${r.incorrect||0} · স্কিপ ${r.skipped||0}`}
+              cm={mcqCm(r)}/>
+          ))}
+        </div>
+      </>}
+
+      <Foot id={id} page="1/2"/>
+    </div>
+  );
+}
+
+function ChapterBack({student,course}){
+  const a=student.analysis||{};
+  const id=identityOf(student);
+  const rows=examRows(a).filter(r=>r.wrOn);
+  const bars=rows.map(r=>({subject:examLabel(r.subject,course),pct:r.wrPct}));
+  const hasWritten=rows.length>0;
+  const w=writtenComment(a.writtenPercentage||0);
+  return(
+    <div className="srp-page" style={{"--rb":"linear-gradient(180deg,#0d9488,#2563eb)"}}>
+      <div className="flourish"/>
+      <BackHeader a={a} id={id}/>
+
+      <div className="sec" style={{"--ac":"#0891b2"}}><span className="tg">WRITTEN</span><b>পরীক্ষাভিত্তিক লিখিত ফলাফল (%)</b><span className="ru"/></div>
+      {hasWritten
+        ? <div className="barCard"><BarChart bars={bars}/></div>
+        : <div className="nod">এই শিক্ষার্থীর কোনো লিখিত পরীক্ষার ফল পাওয়া যায়নি।</div>}
+
+      {hasWritten && <>
+        <div className="sec" style={{"--ac":"#06b6d4"}}><span className="tg">COMMENTS</span><b>পরীক্ষাভিত্তিক লিখিত মন্তব্য</b><span className="ru"/></div>
+        <div className={`scGrid ${density(rows.length,12)}`}>
+          {rows.map((r,i)=>(
+            <ExamCard key={r.subject+i} name={examLabel(r.subject,course)} pct={r.wrPct}
+              marks={fmtMarks(r.written,r.writtenTotal)}
+              cm={wrCm(r)}/>
+          ))}
+        </div>
+      </>}
+
+      <div className="sec" style={{"--ac":"#6d28d9"}}><span className="tg">ANALYSIS</span><b>মন্তব্য ও পর্যবেক্ষণ</b><span className="ru"/></div>
+      <div className="cm" style={{"--ac":"#6d28d9"}}>
+        <div className="h"><span className="lb">সামগ্রিক</span><h3>{a.category}</h3></div>
+        <p>{a.comment}</p>
       </div>
+      {hasWritten && (
+        <div className="cm wr">
+          <div className="h"><span className="lb" style={{background:"#06b6d4"}}>লিখিত · {fmtMarks(a.totalWritten,a.totalWrittenMarks)}</span><h3>{w.c}</h3></div>
+          <p>{w.t}</p>
+        </div>
+      )}
+
+      <MeritNote id={id}/>
+      <Foot id={id} page="2/2"/>
     </div>
   );
 }
@@ -546,6 +738,9 @@ export default function App(){
   const [students,setStudents]=useState(seed);
   const [file,setFile]=useState(null);
   const [loading,setLoading]=useState(false);
+  const [mode,setModeState]=useState(readMode);
+  const setMode=m=>{setModeState(m);try{localStorage.setItem(MODE_KEY,m);}catch{/* storage blocked — mode just won't persist */}};
+  const course=useMemo(()=>mode==="chapter"?courseOf(students):"",[mode,students]);
 
   const upload=async()=>{
     if(!file){alert("Select an Excel file first");return;}
@@ -584,6 +779,10 @@ export default function App(){
           <div><h2>Report Card Printer</h2><div className="sub">{BRAND.name}</div></div>
         </div>
         <div className="srp-actions">
+          <div className="srp-mode" role="group" aria-label="Report mode">
+            <button className={mode==="subject"?"on":""} aria-pressed={mode==="subject"} onClick={()=>setMode("subject")}>Subject-wise · Science/General</button>
+            <button className={mode==="chapter"?"on":""} aria-pressed={mode==="chapter"} onClick={()=>setMode("chapter")}>Chapterwise · MCQ + Written</button>
+          </div>
           <input className="srp-file" type="file" accept=".xlsx,.xls" onChange={e=>setFile(e.target.files[0])}/>
           <button className="srp-btn" onClick={upload} disabled={loading}>{loading?"Processing…":"Upload Excel"}</button>
           {students.length>0 && <button className="srp-btn print" onClick={()=>window.print()}>🖨 Print All ({students.length})</button>}
@@ -603,8 +802,13 @@ export default function App(){
         <div className="srp-stage">
           {ordered.map(s=>(
             <React.Fragment key={s.id??s.roll}>
-              <Front student={s}/>
-              <Back student={s}/>
+              {mode==="chapter" ? <>
+                <ChapterFront student={s} course={course}/>
+                <ChapterBack student={s} course={course}/>
+              </> : <>
+                <Front student={s}/>
+                <Back student={s}/>
+              </>}
             </React.Fragment>
           ))}
         </div>
@@ -673,12 +877,12 @@ function analyze(s){const pd=agg(s),sa=part("Science",byNames(s,SCI)),na=part("G
   return{...pd,...initCmt(pd),subjectConsistency:consistency(s),
     partitions:{science:sa,nonScience:na,comparison:sciCmp(sa,na)}};}
 
-/* demo-only merit: competition ranking on total percentage (1, 2, 2, 4) */
+/* demo-only merit: competition ranking on total marks obtained (1, 2, 2, 4) */
 function demoMerit(list){
-  const ranked=[...list].sort((a,b)=>(b.analysis.totalPercentage||0)-(a.analysis.totalPercentage||0));
+  const ranked=[...list].sort((a,b)=>(b.analysis.totalObtained||0)-(a.analysis.totalObtained||0));
   let lastPct=null,lastMerit=0;
   ranked.forEach((s,i)=>{
-    const pct=s.analysis.totalPercentage||0;
+    const pct=s.analysis.totalObtained||0;
     const merit=pct===lastPct?lastMerit:i+1;
     lastPct=pct;lastMerit=merit;
     s.merit=merit;s.analysis.merit=merit;
