@@ -240,6 +240,13 @@ function band(p){
 function grade(p){const v=Number(p)||0;
   if(v>=90)return"A+";if(v>=80)return"A";if(v>=70)return"A-";if(v>=60)return"B";if(v>=50)return"C";if(v>=40)return"D";return"F";}
 
+/* Comment areas show marks, not percentages: "obtained/total".
+   "—" when that part has no total (the student did not sit it). */
+function fmtMarks(obtained,total){
+  const r=v=>Number((Number(v)||0).toFixed(2));
+  return Number(total)>0?`${r(obtained)}/${r(total)}`:"—";
+}
+
 /* ======================== identity / merit helpers ====================== */
 
 /**
@@ -452,8 +459,8 @@ function Front({student}){
       <div className="scGrid">
         {cmts.map(s=>{const pct=s.totalPercentage||s.percentage||0,c=band(pct);return(
           <div className="scC" key={s.subject} style={{borderLeftColor:c.bar}}>
-            <div className="t"><h4>{s.subject}</h4><span className="bd" style={{background:c.bg,color:c.tx}}>{pct}%</span></div>
-            <div className="mn">MCQ {s.mcqPercentage||0}% · লিখিত {s.writtenPercentage||0}% · মোট {pct}%</div>
+            <div className="t"><h4>{s.subject}</h4><span className="bd" style={{background:c.bg,color:c.tx}}>{fmtMarks(s.totalObtained,s.totalMarks)}</span></div>
+            <div className="mn">MCQ {fmtMarks(s.correct,s.mcqTotal)} · লিখিত {fmtMarks(s.written,s.writtenTotal)}</div>
             <div className="ct" style={{color:c.tx}}>{s.subjectCommentCategory}</div>
             <p>{s.subjectComment}</p>
           </div>);})}
@@ -505,11 +512,11 @@ function Back({student}){
         <p>{a.comment}</p>
       </div>
       <div className="cm" style={{"--ac":"#0d9488"}}>
-        <div className="h"><span className="lb">Science vs General</span><span className="dv">পার্থক্য: {p.comparison?.deviation||0}%</span></div>
+        <div className="h"><span className="lb">Science vs General</span><span className="dv">Science: MCQ {fmtMarks(p.science?.totalCorrect,p.science?.totalMcq)} · লিখিত {fmtMarks(p.science?.totalWritten,p.science?.totalWrittenMarks)} | General: MCQ {fmtMarks(p.nonScience?.totalCorrect,p.nonScience?.totalMcq)} · লিখিত {fmtMarks(p.nonScience?.totalWritten,p.nonScience?.totalWrittenMarks)}</span></div>
         <h3 style={{marginTop:2}}>{p.comparison?.category}</h3><p>{p.comparison?.comment}</p>
       </div>
       <div className="cm wr">
-        <div className="h"><span className="lb" style={{background:"#06b6d4"}}>লিখিত · {a.writtenPercentage||0}%</span><h3>{w.c}</h3></div>
+        <div className="h"><span className="lb" style={{background:"#06b6d4"}}>লিখিত · {fmtMarks(a.totalWritten,a.totalWrittenMarks)}</span><h3>{w.c}</h3></div>
         <p>{w.t}</p>
       </div>
 
