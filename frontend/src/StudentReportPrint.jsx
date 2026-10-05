@@ -229,6 +229,13 @@ function bandColor(p) {
   return { bar: "#475569", bg: "#f1f5f9", text: "#334155", label: "বিশেষ মনোযোগ" };
 }
 
+/* Comment areas show marks, not percentages: "obtained/total".
+   "—" when that part has no total (the student did not sit it). */
+function fmtMarks(obtained, total) {
+  const r = (v) => Number((Number(v) || 0).toFixed(2));
+  return Number(total) > 0 ? `${r(obtained)}/${r(total)}` : "—";
+}
+
 /* ======================= IDENTITY / MERIT HELPERS ========================= */
 
 /**
@@ -567,9 +574,9 @@ function FrontPage({ student }) {
             <div className="scCard" key={s.subject} style={{ borderLeftColor: c.bar }}>
               <div className="scTop">
                 <h4>{s.subject}</h4>
-                <span className="scBadge" style={{ background: c.bg, color: c.text }}>{pct}%</span>
+                <span className="scBadge" style={{ background: c.bg, color: c.text }}>{fmtMarks(s.totalObtained, s.totalMarks)}</span>
               </div>
-              <div className="scMini">MCQ {s.mcqPercentage || 0}% · লিখিত {s.writtenPercentage || 0}% · মোট {pct}%</div>
+              <div className="scMini">MCQ {fmtMarks(s.correct, s.mcqTotal)} · লিখিত {fmtMarks(s.written, s.writtenTotal)}</div>
               <div className="scCat" style={{ color: c.text }}>{s.subjectCommentCategory}</div>
               <p>{s.subjectComment}</p>
             </div>
@@ -650,7 +657,11 @@ function BackPage({ student }) {
       <div className="cmt" style={{ "--accent": "#0d9488" }}>
         <div className="ch">
           <span className="label">Science vs General</span>
-          <span className="dev">পার্থক্য: {p.comparison?.deviation || 0}%</span>
+          <span className="dev">
+            Science: MCQ {fmtMarks(p.science?.totalCorrect, p.science?.totalMcq)} · লিখিত {fmtMarks(p.science?.totalWritten, p.science?.totalWrittenMarks)}
+            {" | "}
+            General: MCQ {fmtMarks(p.nonScience?.totalCorrect, p.nonScience?.totalMcq)} · লিখিত {fmtMarks(p.nonScience?.totalWritten, p.nonScience?.totalWrittenMarks)}
+          </span>
         </div>
         <h3 style={{ marginTop: 2 }}>{p.comparison?.category}</h3>
         <p>{p.comparison?.comment}</p>
@@ -658,7 +669,7 @@ function BackPage({ student }) {
 
       <div className="cmt written">
         <div className="ch">
-          <span className="label" style={{ background: "#06b6d4" }}>লিখিত অংশ · {a.writtenPercentage || 0}%</span>
+          <span className="label" style={{ background: "#06b6d4" }}>লিখিত অংশ · {fmtMarks(a.totalWritten, a.totalWrittenMarks)}</span>
           <h3>{written.category}</h3>
         </div>
         <p>{written.comment}</p>
